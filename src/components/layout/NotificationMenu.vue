@@ -217,24 +217,51 @@ const formatTime = (timestamp: Date): string => {
 
 <style scoped>
 .notification-unread {
-  background-color: rgba(25, 118, 210, 0.05);
-  border-left: 3px solid #1976d2;
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.08) 0%, rgba(25, 118, 210, 0.04) 100%);
+  border-left: 4px solid #1976d2;
+  border-radius: 0 8px 8px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.notification-unread::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(25, 118, 210, 0.1), transparent);
+  transform: translateX(-100%);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .v-list-item {
-  padding: 12px 16px;
+  padding: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 12px;
+  margin: 4px 8px;
+  border: 1px solid transparent;
 }
 
 .v-list-item-title {
   font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 4px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #1f2937;
+  line-height: 1.4;
 }
 
 .v-list-item-subtitle {
   font-size: 13px;
-  line-height: 1.3;
+  line-height: 1.4;
   opacity: 0.8;
+  color: #6b7280;
 }
 
 .text-wrap {
@@ -242,24 +269,121 @@ const formatTime = (timestamp: Date): string => {
   word-break: break-word;
 }
 
-/* Hover effects */
+/* Enhanced hover effects */
 .v-list-item:hover {
-  background-color: rgba(0, 0, 0, 0.04);
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.06) 0%, rgba(25, 118, 210, 0.02) 100%);
+  transform: translateX(4px);
+  border-color: rgba(25, 118, 210, 0.2);
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.1);
 }
 
 .v-theme--dark .v-list-item:hover {
-  background-color: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
 }
 
 .v-theme--dark .notification-unread {
-  background-color: rgba(33, 150, 243, 0.1);
-  border-left-color: #2196f3;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%);
+  border-left-color: #3b82f6;
+}
+
+.v-theme--dark .v-list-item-title {
+  color: #f9fafb;
+}
+
+.v-theme--dark .v-list-item-subtitle {
+  color: #d1d5db;
+}
+
+/* Notification menu card styling */
+.v-card {
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+  overflow: hidden;
+}
+
+.v-theme--dark .v-card {
+  background: rgba(30, 30, 30, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Card title styling */
+.v-card-title {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.025em;
+}
+
+.v-theme--dark .v-card-title {
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Badge styling */
+.v-badge {
+  transition: all 0.3s ease;
+}
+
+.v-badge:hover {
+  transform: scale(1.1);
+}
+
+.v-badge .v-badge__badge {
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Button enhancements */
+.v-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 10px;
+  text-transform: none;
+  font-weight: 500;
+}
+
+.v-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.v-btn.v-btn--variant-text:hover {
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(25, 118, 210, 0.05) 100%);
+}
+
+/* Icon enhancements */
+.v-icon {
+  transition: all 0.2s ease;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.v-btn:hover .v-icon {
+  transform: scale(1.1);
+}
+
+/* Time display styling */
+.text-caption {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Scrollbar styling for notification list */
 .overflow-y-auto {
   scrollbar-width: thin;
-  scrollbar-color: #ccc transparent;
+  scrollbar-color: rgba(25, 118, 210, 0.3) transparent;
 }
 
 .overflow-y-auto::-webkit-scrollbar {
@@ -268,14 +392,58 @@ const formatTime = (timestamp: Date): string => {
 
 .overflow-y-auto::-webkit-scrollbar-track {
   background: transparent;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb {
-  background-color: #ccc;
   border-radius: 3px;
 }
 
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(25, 118, 210, 0.4) 0%, rgba(25, 118, 210, 0.2) 100%);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background-color: #aaa;
+  background: linear-gradient(180deg, rgba(25, 118, 210, 0.6) 0%, rgba(25, 118, 210, 0.4) 100%);
+}
+
+/* Empty state styling */
+.v-list-item[disabled] {
+  opacity: 0.6;
+  font-style: italic;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(107, 114, 128, 0.1) 0%, rgba(107, 114, 128, 0.05) 100%);
+  border: 1px dashed rgba(107, 114, 128, 0.3);
+}
+
+/* Notification type indicators */
+.notification-success {
+  border-left-color: #10b981;
+}
+
+.notification-warning {
+  border-left-color: #f59e0b;
+}
+
+.notification-error {
+  border-left-color: #ef4444;
+}
+
+.notification-info {
+  border-left-color: #3b82f6;
+}
+
+/* Animation for new notifications */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification-new {
+  animation: slideInRight 0.3s ease-out;
 }
 </style>

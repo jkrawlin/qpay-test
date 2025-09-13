@@ -364,40 +364,179 @@ const confirmLogout = async () => {
 
 <style scoped>
 .v-list-item {
-  transition: background-color 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+  margin: 2px 4px;
 }
 
 .v-list-item:hover {
-  background-color: rgba(0, 0, 0, 0.04);
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(25, 118, 210, 0.05) 100%);
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.1);
 }
 
 .v-theme--dark .v-list-item:hover {
-  background-color: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
 }
 
 /* Avatar styling */
 .v-avatar {
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.v-avatar:hover {
+  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
 /* Role chip styling */
 .v-chip {
   font-size: 10px;
-  height: 18px;
+  height: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 
-/* Language dialog list styling */
+.v-chip:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Menu styling */
+.v-menu > .v-overlay__content > .v-card {
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.v-theme--dark .v-menu > .v-overlay__content > .v-card {
+  background: rgba(30, 30, 30, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Dialog styling */
+.v-dialog .v-card {
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+}
+
 .v-dialog .v-list-item {
   padding: 12px 16px;
+  border-radius: 8px;
+  margin: 2px 8px;
+  transition: all 0.2s ease;
+}
+
+.v-dialog .v-list-item:hover {
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(25, 118, 210, 0.05) 100%);
+  transform: translateX(4px);
 }
 
 /* About dialog content styling */
+.v-dialog .v-card-text {
+  line-height: 1.6;
+}
+
 .v-dialog .v-card-text ul {
   padding-left: 20px;
   margin: 0;
 }
 
 .v-dialog .v-card-text li {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.v-dialog .v-card-text li:hover {
+  transform: translateX(4px);
+  color: #1976d2;
+}
+
+.v-dialog .v-card-text li::before {
+  content: '▸';
+  position: absolute;
+  left: -16px;
+  color: #1976d2;
+  font-weight: bold;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.v-dialog .v-card-text li:hover::before {
+  opacity: 1;
+}
+
+/* Button enhancements */
+.v-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: none;
+  font-weight: 500;
+  border-radius: 12px;
+}
+
+.v-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.v-btn.v-btn--variant-text:hover {
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(25, 118, 210, 0.05) 100%);
+}
+
+/* Icon enhancements */
+.v-icon {
+  transition: all 0.2s ease;
+}
+
+.v-list-item:hover .v-icon {
+  color: #1976d2;
+  transform: scale(1.1);
+}
+
+/* Badge enhancements */
+.v-badge {
+  transition: all 0.2s ease;
+}
+
+.v-badge:hover {
+  transform: scale(1.05);
+}
+
+/* Divider styling */
+.v-divider {
+  margin: 8px 0;
+  opacity: 0.6;
+}
+
+/* Scrollbar styling for dialogs */
+.v-dialog ::-webkit-scrollbar {
+  width: 6px;
+}
+
+.v-dialog ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.v-dialog ::-webkit-scrollbar-thumb {
+  background: rgba(25, 118, 210, 0.3);
+  border-radius: 3px;
+}
+
+.v-dialog ::-webkit-scrollbar-thumb:hover {
+  background: rgba(25, 118, 210, 0.5);
 }
 </style>
