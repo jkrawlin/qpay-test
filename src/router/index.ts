@@ -1,12 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import type { RouteRecordRaw } from 'vue-router'
 
 // Lazy-loaded components for better performance
 const Dashboard = () => import('@/views/Dashboard.vue')
-const Login = () => import('@/views/auth/Login.vue')
-const Register = () => import('@/views/auth/Register.vue')
-const ForgotPassword = () => import('@/views/auth/ForgotPassword.vue')
 
 // Employee Management
 const NiponEmployees = () => import('@/views/employees/NiponEmployees.vue')
@@ -74,39 +70,18 @@ const Unauthorized = () => import('@/views/error/Unauthorized.vue')
 const ServerError = () => import('@/views/error/ServerError.vue')
 
 const routes: RouteRecordRaw[] = [
-  // Authentication Routes
-  {
-    path: '/login',
-    name: 'Login',
-    component: Login,
-    meta: { requiresGuest: true, title: 'Login - Nipon Payroll Pro' }
-  },
-  {
-    path: '/register',
-    name: 'Register',
-    component: Register,
-    meta: { requiresGuest: true, title: 'Register - Nipon Payroll Pro' }
-  },
-  {
-    path: '/forgot-password',
-    name: 'ForgotPassword',
-    component: ForgotPassword,
-    meta: { requiresGuest: true, title: 'Forgot Password - Nipon Payroll Pro' }
-  },
-
   // Main Application Routes
   {
     path: '/',
     name: 'Dashboard',
     component: Dashboard,
-    meta: { requiresAuth: true, title: 'Dashboard - Nipon Payroll Pro' }
+    meta: { title: 'Dashboard - Nipon Payroll Pro' }
   },
 
   // Employee Management
   {
     path: '/employees',
     name: 'EmployeeManagement',
-    meta: { requiresAuth: true, roles: ['admin', 'hr'] },
     children: [
       {
         path: '',
@@ -155,7 +130,6 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/payroll',
     name: 'PayrollManagement',
-    meta: { requiresAuth: true, roles: ['admin', 'hr', 'finance'] },
     children: [
       {
         path: '',
@@ -194,7 +168,6 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/compliance',
     name: 'ComplianceManagement',
-    meta: { requiresAuth: true, roles: ['admin', 'hr'] },
     children: [
       {
         path: '',
@@ -221,7 +194,6 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/accounts',
     name: 'AccountsManagement',
-    meta: { requiresAuth: true, roles: ['admin', 'finance'] },
     children: [
       {
         path: '',
@@ -260,7 +232,6 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/customers',
     name: 'CustomerManagement',
-    meta: { requiresAuth: true, roles: ['admin', 'sales'] },
     children: [
       {
         path: '',
@@ -299,7 +270,6 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/receipts',
     name: 'ReceiptManagement',
-    meta: { requiresAuth: true, roles: ['admin', 'finance'] },
     children: [
       {
         path: '',
@@ -332,7 +302,6 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/analytics',
     name: 'Analytics',
-    meta: { requiresAuth: true, roles: ['admin', 'manager'] },
     children: [
       {
         path: '',
@@ -365,7 +334,6 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/employee-portal',
     name: 'EmployeePortalManagement',
-    meta: { requiresAuth: true, roles: ['employee'] },
     children: [
       {
         path: '',
@@ -398,7 +366,6 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/settings',
     name: 'SettingsManagement',
-    meta: { requiresAuth: true, roles: ['admin'] },
     children: [
       {
         path: '',
@@ -475,47 +442,12 @@ const router = createRouter({
 // Navigation guards
 router.beforeEach(async (to, from, next) => {
   try {
-    const authStore = useAuthStore()
-    
-    // Wait for auth initialization
-    if (!authStore.initialized) {
-      await authStore.initializeAuth()
-    }
-    
     // Set page title
     if (to.meta.title) {
       document.title = to.meta.title as string
     }
 
-    // Check authentication requirements
-    if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-      next({ name: 'Login', query: { redirect: to.fullPath } })
-      return
-    }
-
-    // Check guest-only routes (login, register)
-    if (to.meta.requiresGuest && authStore.isAuthenticated) {
-      next({ name: 'Dashboard' })
-      return
-    }
-
-    // Check role-based access
-    if (to.meta.roles && authStore.user) {
-      const userRoles = authStore.user.roles || []
-      const requiredRoles = to.meta.roles as string[]
-      
-      if (!requiredRoles.some(role => userRoles.includes(role))) {
-        next({ name: 'Unauthorized' })
-        return
-      }
-    }
-
-    // Check subscription status for premium features
-    if (to.meta.requiresPremium && !authStore.hasPremiumAccess) {
-      next({ name: 'SubscriptionManagement' })
-      return
-    }
-
+    // Allow all navigation without authentication checks
     next()
   } catch (error) {
     console.error('Navigation guard error:', error)

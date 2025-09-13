@@ -1,19 +1,14 @@
 <template>
   <v-app>
-    <!-- Mobile Detection Alert -->
-    <MobileRedirect v-if="isMobile" />
-    
-    <!-- Main App Content for Desktop -->
-    <template v-else>
-      <!-- Navigation Bar -->
-      <v-app-bar
-        app
-        color="primary"
-        dark
-        elevate-on-scroll
-        height="56"
-        density="compact"
-      >
+    <!-- Navigation Bar -->
+    <v-app-bar
+      app
+      color="primary"
+      dark
+      elevate-on-scroll
+      height="56"
+      density="compact"
+    >
         <v-app-bar-nav-icon
           @click="drawer = !drawer"
           aria-label="Toggle navigation menu"
@@ -114,7 +109,6 @@
           </v-btn>
         </template>
       </v-snackbar>
-    </template>
   </v-app>
 </template>
 
@@ -126,7 +120,6 @@ import { useAppStore } from '@/stores/app'
 import { useRouter } from 'vue-router'
 
 // Components
-import MobileRedirect from '@/components/common/MobileRedirect.vue'
 import NavigationDrawer from '@/components/layout/NavigationDrawer.vue'
 import NotificationMenu from '@/components/layout/NotificationMenu.vue'
 import UserMenu from '@/components/layout/UserMenu.vue'
@@ -152,7 +145,8 @@ const drawer = ref(false)
 
 // Computed properties
 const isMobile = computed(() => {
-  return mobile.value || window.innerWidth < 1024
+  // Temporarily disable mobile detection for testing
+  return false
 })
 
 const currentYear = computed(() => new Date().getFullYear())
@@ -191,10 +185,10 @@ const initializeTheme = () => {
 }
 
 const handleResize = () => {
-  if (window.innerWidth < 1024) {
-    // Redirect to mobile page if window becomes too small
-    window.location.href = '/mobile-redirect.html'
-  }
+  // Disable mobile redirect for now - app should work regardless of screen size
+  // if (window.innerWidth < 1024) {
+  //   window.location.href = '/mobile-redirect.html'
+  // }
 }
 </script>
 

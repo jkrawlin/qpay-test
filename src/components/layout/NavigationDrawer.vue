@@ -507,14 +507,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useAuthStore } from '@/stores/auth'
 
-const authStore = useAuthStore()
-
-// Computed properties
-const hasPermission = (permission: string) => authStore.hasPermission(permission)
-const isAdmin = computed(() => authStore.isAdmin)
-const hasPremiumAccess = computed(() => authStore.hasPremiumAccess)
+// Simplified without auth - allow access to all features
+const hasPermission = (permission: string) => true
+const isAdmin = computed(() => true)
+const hasPremiumAccess = computed(() => true)
 
 // Mock data for alerts count - in real app this would come from a store
 const expiryAlertsCount = computed(() => 5) // This should be fetched from compliance store
