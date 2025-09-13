@@ -16,37 +16,6 @@ import '@fortawesome/fontawesome-free/css/all.css'
 // Iconify
 import { Icon } from '@iconify/vue'
 
-// Toast Notifications
-import Toast, { PluginOptions } from 'vue-toastification/dist/index.mjs'
-import 'vue-toastification/dist/index.css'
-
-// ECharts
-import ECharts from 'vue-echarts'
-import { use } from 'echarts/core'
-import { CanvasRenderer } from 'echarts/renderers'
-import { BarChart, LineChart, PieChart } from 'echarts/charts'
-import { 
-  GridComponent, 
-  TooltipComponent, 
-  LegendComponent,
-  TitleComponent 
-} from 'echarts/components'
-
-// ApexCharts
-import VueApexCharts from 'vue3-apexcharts'
-
-// Date Picker
-import VueDatePicker from '@vuepic/vue-datepicker'
-import '@vuepic/vue-datepicker/dist/main.css'
-
-// Perfect Scrollbar
-import PerfectScrollbar from 'vue3-perfect-scrollbar'
-import 'vue3-perfect-scrollbar/style.css'
-
-// Floating Vue (Tooltips)
-import FloatingVue from 'floating-vue'
-import 'floating-vue/dist/style.css'
-
 // Lucide Icons (import commonly used ones)
 import { 
   Users, Calendar, DollarSign, Eye, Edit3, Trash2, 
@@ -63,33 +32,19 @@ import router from './router'
 // Global Styles
 import './style.css'
 
-// Register ECharts components
-use([
-  CanvasRenderer,
-  BarChart,
-  LineChart,
-  PieChart,
-  GridComponent,
-  TooltipComponent,
-  LegendComponent,
-  TitleComponent
-])
+// Firebase
+import { initializeFirebase } from './firebase/config'
 
-// Toast configuration
-const toastOptions: PluginOptions = {
-  position: 'top-right',
-  timeout: 4000,
-  closeOnClick: true,
-  pauseOnFocusLoss: true,
-  pauseOnHover: true,
-  draggable: true,
-  draggablePercent: 0.6,
-  showCloseButtonOnHover: false,
-  hideProgressBar: false,
-  closeButton: 'button',
-  icon: true,
-  rtl: false
-}
+// Handsontable
+import { HotTable } from '@handsontable/vue3'
+import { registerAllModules } from 'handsontable/registry'
+import 'handsontable/dist/handsontable.full.min.css'
+
+// Register Handsontable modules
+registerAllModules()
+
+// Initialize Firebase
+initializeFirebase()
 
 // Create Vuetify instance
 const vuetify = createVuetify({
@@ -142,12 +97,6 @@ const app = createApp(App)
 // Register Iconify
 app.component('Icon', Icon)
 
-// Register ECharts
-app.component('VChart', ECharts)
-
-// Register Date Picker
-app.component('VueDatePicker', VueDatePicker)
-
 // Register Lucide Icons
 app.component('LucideUsers', Users)
 app.component('LucideCalendar', Calendar)
@@ -175,20 +124,13 @@ app.component('LucideMail', Mail)
 app.component('LucideTrendingUp', TrendingUp)
 app.component('LucideTrendingDown', TrendingDown)
 
+// Register global components
+app.component('HotTable', HotTable)
+
 // Use plugins
-const pinia = createPinia()
-app.use(pinia)
+app.use(createPinia())
 app.use(router)
 app.use(vuetify)
-app.use(Toast, toastOptions)
-// app.use(VueApexCharts) // Temporarily disabled
-app.use(PerfectScrollbar)
-app.use(FloatingVue)
-
-// Initialize auth store
-const { useAuthStore } = await import('@/stores/auth')
-const authStore = useAuthStore(pinia)
-await authStore.initializeAuth()
 
 // PWA Service Worker
 const updateSW = registerSW({
