@@ -28,7 +28,7 @@
 
     <v-container fluid class="pa-4">
       <!-- Quick Stats Cards -->
-      <v-row class="mb-4">
+      <v-row class="mb-6">
         <v-col cols="12" sm="6" lg="3" v-for="stat in quickStats" :key="stat.title">
           <v-card
             :color="stat.color"
@@ -36,28 +36,30 @@
             hover
             class="stat-card"
             @click="navigateTo(stat.route)"
-            elevation="2"
+            elevation="3"
           >
-            <v-card-text class="pa-4">
-              <div class="d-flex justify-space-between align-center">
-                <div>
-                  <div class="text-h5 font-weight-bold mb-1">
+            <v-card-text class="pa-6">
+              <div class="d-flex justify-space-between align-center mb-3">
+                <div class="flex-grow-1">
+                  <div class="text-h4 font-weight-bold mb-2">
                     {{ stat.value }}
                   </div>
-                  <div class="text-caption opacity-90">
+                  <div class="text-body-1 opacity-90">
                     {{ stat.title }}
                   </div>
                 </div>
-                <Icon :icon="stat.icon" :width="36" :height="36" class="opacity-70" />
+                <div class="stat-icon">
+                  <Icon :icon="stat.icon" :width="48" :height="48" class="opacity-80" />
+                </div>
               </div>
-              <div class="mt-2 d-flex align-center">
+              <div class="d-flex align-center">
                 <Icon 
                   :icon="stat.trend > 0 ? 'material-symbols:trending-up' : stat.trend < 0 ? 'material-symbols:trending-down' : 'material-symbols:remove'" 
-                  :width="14" 
-                  :height="14" 
-                  class="mr-1" 
+                  :width="16" 
+                  :height="16" 
+                  class="mr-2" 
                 />
-                <span class="text-body-2">
+                <span class="text-body-2 opacity-90">
                   {{ Math.abs(stat.trend) }}% {{ stat.trend > 0 ? 'increase' : stat.trend < 0 ? 'decrease' : 'no change' }}
                 </span>
               </div>
@@ -71,14 +73,18 @@
         <!-- Left Column -->
         <v-col cols="12" lg="8">
           <!-- Recent Activities -->
-          <v-card class="mb-6" elevation="2">
-            <v-card-title class="d-flex align-center justify-space-between">
-              <span>Recent Activities</span>
-              <v-btn variant="text" size="small" :to="{ name: 'TransactionHistory' }">
+          <v-card class="mb-6" elevation="3">
+            <v-card-title class="d-flex align-center justify-space-between pa-6 pb-4">
+              <div class="d-flex align-center">
+                <Icon icon="material-symbols:history" :width="24" :height="24" class="mr-3 text-primary" />
+                <span class="text-h6 font-weight-medium">Recent Activities</span>
+              </div>
+              <v-btn variant="text" size="small" :to="{ name: 'TransactionHistory' }" class="text-primary">
+                <Icon icon="material-symbols:arrow-forward" :width="16" :height="16" class="mr-1" />
                 View All
               </v-btn>
             </v-card-title>
-            <v-card-text>
+            <v-card-text class="pa-6 pt-2">
               <v-timeline density="comfortable" side="end">
                 <v-timeline-item
                   v-for="activity in recentActivities"
@@ -87,18 +93,18 @@
                   size="small"
                 >
                   <template #icon>
-                    <Icon :icon="activity.icon" :width="16" :height="16" />
+                    <Icon :icon="activity.icon" :width="18" :height="18" />
                   </template>
                   <div class="d-flex justify-space-between align-center">
                     <div>
-                      <div class="text-body-2 font-weight-medium">
+                      <div class="text-body-1 font-weight-medium mb-1">
                         {{ activity.title }}
                       </div>
-                      <div class="text-caption text-grey-darken-1">
+                      <div class="text-body-2 text-grey-darken-1">
                         {{ activity.description }}
                       </div>
                     </div>
-                    <div class="text-caption text-grey-darken-1">
+                    <div class="text-caption text-grey-darken-1 ml-4">
                       {{ formatTime(activity.timestamp) }}
                     </div>
                   </div>
@@ -108,15 +114,23 @@
           </v-card>
 
           <!-- Payroll Summary Chart -->
-          <v-card elevation="2">
-            <v-card-title>Monthly Payroll Summary</v-card-title>
-            <v-card-text>
+          <v-card elevation="3">
+            <v-card-title class="pa-6 pb-4">
+              <div class="d-flex align-center">
+                <Icon icon="material-symbols:analytics" :width="24" :height="24" class="mr-3 text-primary" />
+                <span class="text-h6 font-weight-medium">Monthly Payroll Summary</span>
+              </div>
+            </v-card-title>
+            <v-card-text class="pa-6 pt-2">
               <div class="chart-container" style="height: 300px;">
                 <!-- Chart will be implemented with Chart.js -->
                 <div class="d-flex align-center justify-center h-100 text-grey-darken-1">
                   <div class="text-center">
-                    <Icon icon="material-symbols:monitoring" :width="48" :height="48" class="mb-2" />
-                    <div>Payroll Chart Coming Soon</div>
+                    <div class="chart-placeholder">
+                      <Icon icon="material-symbols:monitoring" :width="64" :height="64" class="mb-4 text-primary opacity-60" />
+                      <div class="text-h6 font-weight-medium mb-2">Payroll Analytics</div>
+                      <div class="text-body-2">Advanced charts coming soon</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -127,36 +141,45 @@
         <!-- Right Column -->
         <v-col cols="12" lg="4">
           <!-- Compliance Alerts -->
-          <v-card class="mb-6" elevation="2">
-            <v-card-title class="d-flex align-center justify-space-between">
-              <span>Compliance Alerts</span>
+          <v-card class="mb-6" elevation="3">
+            <v-card-title class="d-flex align-center justify-space-between pa-6 pb-4">
+              <div class="d-flex align-center">
+                <Icon icon="material-symbols:verified-user" :width="24" :height="24" class="mr-3 text-primary" />
+                <span class="text-h6 font-weight-medium">Compliance Alerts</span>
+              </div>
               <v-chip
                 v-if="complianceAlerts.length > 0"
                 :color="getAlertSeverityColor()"
                 size="small"
+                variant="flat"
                 :text="complianceAlerts.length.toString()"
               />
             </v-card-title>
-            <v-card-text>
-              <div v-if="complianceAlerts.length === 0" class="text-center py-4">
-                <Icon icon="material-symbols:verified-user" :width="32" :height="32" color="success" class="mb-2" />
+            <v-card-text class="pa-6 pt-2">
+              <div v-if="complianceAlerts.length === 0" class="text-center py-6">
+                <Icon icon="material-symbols:verified-user" :width="48" :height="48" color="success" class="mb-3" />
+                <div class="text-body-1 font-weight-medium mb-1">All Up to Date</div>
                 <div class="text-body-2 text-grey-darken-1">
-                  All compliance items are up to date
+                  All compliance items are current
                 </div>
               </div>
-              <v-list v-else density="comfortable">
+              <v-list v-else density="comfortable" class="pa-0">
                 <v-list-item
                   v-for="alert in complianceAlerts.slice(0, 5)"
                   :key="alert.id"
                   @click="navigateTo(alert.route)"
+                  class="px-0 hover-item"
+                  rounded
                 >
                   <template #prepend>
-                    <Icon :icon="alert.icon" :color="alert.severity" :width="20" :height="20" />
+                    <v-avatar size="36" :color="alert.severity" variant="tonal" class="mr-3">
+                      <Icon :icon="alert.icon" :width="20" :height="20" />
+                    </v-avatar>
                   </template>
-                  <v-list-item-title class="text-body-2">
+                  <v-list-item-title class="text-body-1 font-weight-medium">
                     {{ alert.title }}
                   </v-list-item-title>
-                  <v-list-item-subtitle class="text-caption">
+                  <v-list-item-subtitle class="text-body-2">
                     {{ alert.daysUntilExpiry }} days remaining
                   </v-list-item-subtitle>
                 </v-list-item>
@@ -166,18 +189,24 @@
                 variant="text"
                 size="small"
                 block
-                class="mt-2"
+                class="mt-4"
                 :to="{ name: 'ExpiryAlerts' }"
               >
+                <Icon icon="material-symbols:arrow-forward" :width="16" :height="16" class="mr-1" />
                 View All {{ complianceAlerts.length }} Alerts
               </v-btn>
             </v-card-text>
           </v-card>
 
           <!-- Quick Actions -->
-          <v-card class="mb-6" elevation="2">
-            <v-card-title>Quick Actions</v-card-title>
-            <v-card-text>
+          <v-card class="mb-6" elevation="3">
+            <v-card-title class="pa-6 pb-4">
+              <div class="d-flex align-center">
+                <Icon icon="material-symbols:dashboard-customize" :width="24" :height="24" class="mr-3 text-primary" />
+                <span class="text-h6 font-weight-medium">Quick Actions</span>
+              </div>
+            </v-card-title>
+            <v-card-text class="pa-6 pt-2">
               <v-row dense>
                 <v-col cols="6" v-for="action in quickActions" :key="action.title">
                   <v-btn
@@ -185,12 +214,12 @@
                     variant="tonal"
                     block
                     :to="action.route"
-                    class="text-caption"
-                    height="60"
+                    class="text-caption action-btn"
+                    height="72"
                   >
                     <div class="text-center">
-                      <Icon :icon="action.icon" :width="20" :height="20" class="mb-1" />
-                      <div>{{ action.title }}</div>
+                      <Icon :icon="action.icon" :width="24" :height="24" class="mb-2" />
+                      <div class="font-weight-medium">{{ action.title }}</div>
                     </div>
                   </v-btn>
                 </v-col>
@@ -199,34 +228,51 @@
           </v-card>
 
           <!-- System Status -->
-          <v-card elevation="2">
-            <v-card-title>System Status</v-card-title>
-            <v-card-text>
-              <div class="d-flex align-center justify-space-between mb-3">
-                <span class="text-body-2">Database</span>
+          <v-card elevation="3">
+            <v-card-title class="pa-6 pb-4">
+              <div class="d-flex align-center">
+                <Icon icon="material-symbols:monitor-heart" :width="24" :height="24" class="mr-3 text-primary" />
+                <span class="text-h6 font-weight-medium">System Status</span>
+              </div>
+            </v-card-title>
+            <v-card-text class="pa-6 pt-2">
+              <div class="d-flex align-center justify-space-between mb-4">
+                <div class="d-flex align-center">
+                  <Icon icon="material-symbols:database" :width="20" :height="20" class="mr-3 text-grey-darken-1" />
+                  <span class="text-body-1">Database</span>
+                </div>
                 <v-chip color="success" size="small" variant="flat">
-                  <Icon icon="material-symbols:check-circle" :width="12" :height="12" class="mr-1" />
+                  <Icon icon="material-symbols:check-circle" :width="14" :height="14" class="mr-1" />
                   Connected
                 </v-chip>
               </div>
-              <div class="d-flex align-center justify-space-between mb-3">
-                <span class="text-body-2">Backup Status</span>
+              <div class="d-flex align-center justify-space-between mb-4">
+                <div class="d-flex align-center">
+                  <Icon icon="material-symbols:backup" :width="20" :height="20" class="mr-3 text-grey-darken-1" />
+                  <span class="text-body-1">Backup Status</span>
+                </div>
                 <v-chip color="success" size="small" variant="flat">
-                  <Icon icon="material-symbols:check-circle" :width="12" :height="12" class="mr-1" />
+                  <Icon icon="material-symbols:check-circle" :width="14" :height="14" class="mr-1" />
                   Up to date
                 </v-chip>
               </div>
-              <div class="d-flex align-center justify-space-between mb-3">
-                <span class="text-body-2">Notifications</span>
+              <div class="d-flex align-center justify-space-between mb-4">
+                <div class="d-flex align-center">
+                  <Icon icon="material-symbols:notifications" :width="20" :height="20" class="mr-3 text-grey-darken-1" />
+                  <span class="text-body-1">Notifications</span>
+                </div>
                 <v-chip color="warning" size="small" variant="flat">
-                  <Icon icon="material-symbols:warning" :width="12" :height="12" class="mr-1" />
+                  <Icon icon="material-symbols:warning" :width="14" :height="14" class="mr-1" />
                   {{ unreadNotifications }} pending
                 </v-chip>
               </div>
               <div class="d-flex align-center justify-space-between">
-                <span class="text-body-2">Subscription</span>
+                <div class="d-flex align-center">
+                  <Icon icon="material-symbols:credit-card" :width="20" :height="20" class="mr-3 text-grey-darken-1" />
+                  <span class="text-body-1">Subscription</span>
+                </div>
                 <v-chip :color="subscriptionStatusColor" size="small" variant="flat">
-                  <Icon :icon="subscriptionIcon" :width="12" :height="12" class="mr-1" />
+                  <Icon :icon="subscriptionIcon" :width="14" :height="14" class="mr-1" />
                   {{ subscriptionStatus }}
                 </v-chip>
               </div>
@@ -244,6 +290,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { format } from 'date-fns'
+import { Icon } from '@iconify/vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -502,13 +549,35 @@ onMounted(() => {
 .stat-card {
   cursor: pointer;
   transition: all 0.3s ease;
-  height: 120px;
-  border-radius: 12px !important;
+  height: 150px;
+  border-radius: 16px !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+  pointer-events: none;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+.stat-icon {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .chart-container {
@@ -521,11 +590,44 @@ onMounted(() => {
 /* Card hover effects */
 .v-card {
   transition: all 0.3s ease;
-  border-radius: 12px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .v-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12) !important;
+  transform: translateY(-1px);
+}
+
+/* Action buttons */
+.action-btn {
+  border-radius: 12px !important;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* Chart placeholder */
+.chart-placeholder {
+  padding: 40px;
+  border-radius: 12px;
+  background: rgba(25, 118, 210, 0.02);
+  border: 2px dashed rgba(25, 118, 210, 0.2);
+}
+
+/* List hover effects */
+.hover-item {
+  transition: all 0.2s ease;
+  border-radius: 12px !important;
+  margin-bottom: 4px;
+}
+
+.hover-item:hover {
+  background: rgba(25, 118, 210, 0.04) !important;
+  transform: translateX(4px);
 }
 
 /* Timeline styling */
