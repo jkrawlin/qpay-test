@@ -807,35 +807,234 @@ onMounted(() => {
 
 <style scoped>
 .compliance-dashboard {
-  background-color: #fafafa;
+  background: linear-gradient(135deg, #fafafa 0%, #f0f2f5 100%);
   min-height: 100vh;
+  position: relative;
+}
+
+.compliance-dashboard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><defs><pattern id="hex" width="28" height="49" patternUnits="userSpaceOnUse" patternTransform="scale(0.3)"><polygon points="14,1 26,8 26,22 14,29 2,22 2,8" fill="none" stroke="rgba(0,0,0,0.02)" stroke-width="1"/></pattern></defs><rect width="60" height="60" fill="url(%23hex)"/></svg>');
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Enhanced data table styling */
+.compliance-table {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+}
+
+.compliance-table :deep(.v-data-table__tr) {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .compliance-table :deep(.v-data-table__tr:hover) {
-  background-color: rgba(25, 118, 210, 0.04);
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.06) 0%, rgba(25, 118, 210, 0.02) 100%);
+  transform: scale(1.001);
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.1);
 }
 
 .compliance-table :deep(.v-data-table-header) {
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 12px;
 }
 
-/* Progress indicators */
+.compliance-table :deep(.v-data-table-header__content) {
+  color: #374151;
+}
+
+/* Enhanced progress indicators */
 .v-progress-linear {
-  border-radius: 2px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.05);
 }
 
-/* Card hover effects */
+.v-progress-linear :deep(.v-progress-linear__determinate) {
+  background: linear-gradient(90deg, #10b981, #34d399);
+  position: relative;
+}
+
+.v-progress-linear :deep(.v-progress-linear__determinate::after) {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: progress-shimmer 2s infinite;
+}
+
+@keyframes progress-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Enhanced card hover effects */
 .v-card {
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.v-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #10b981, #34d399, #10b981);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.v-card:hover::before {
+  transform: scaleX(1);
 }
 
 .v-card:hover {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
-/* Expansion panels styling */
+/* Status card enhancements */
+.v-card.success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.v-card.warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+}
+
+.v-card.error {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.v-card.info {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+}
+
+/* Enhanced expansion panels styling */
+.v-expansion-panels {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.v-expansion-panels :deep(.v-expansion-panel) {
+  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
 .v-expansion-panels :deep(.v-expansion-panel-title) {
+  font-weight: 600;
+  padding: 20px 24px;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.v-expansion-panels :deep(.v-expansion-panel-title:hover) {
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.08) 0%, rgba(25, 118, 210, 0.04) 100%);
+  transform: translateX(4px);
+}
+
+.v-expansion-panels :deep(.v-expansion-panel-text) {
+  padding: 24px;
+  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+}
+
+/* Enhanced buttons */
+.v-btn {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 12px;
+  text-transform: none;
   font-weight: 500;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.v-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.v-btn.v-btn--variant-elevated.success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.v-btn.v-btn--variant-elevated.warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.v-btn.v-btn--variant-elevated.error {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+/* Enhanced chips and badges */
+.v-chip {
+  border-radius: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 11px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.v-chip:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.v-chip.text-success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.v-chip.text-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.v-chip.text-error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Icon enhancements */
+.v-icon {
+  transition: all 0.2s ease;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.v-btn:hover .v-icon {
+  transform: scale(1.1);
 }
 
 /* Responsive adjustments */
@@ -843,5 +1042,94 @@ onMounted(() => {
   .compliance-table :deep(.v-data-table) {
     font-size: 0.875rem;
   }
+  
+  .v-card:hover {
+    transform: translateY(-2px) scale(1.01);
+  }
+  
+  .v-expansion-panels :deep(.v-expansion-panel-title) {
+    padding: 16px 20px;
+  }
+}
+
+/* Dark theme adjustments */
+.v-theme--dark .compliance-dashboard {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+.v-theme--dark .compliance-dashboard::before {
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><defs><pattern id="hex" width="28" height="49" patternUnits="userSpaceOnUse" patternTransform="scale(0.3)"><polygon points="14,1 26,8 26,22 14,29 2,22 2,8" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></pattern></defs><rect width="60" height="60" fill="url(%23hex)"/></svg>');
+}
+
+.v-theme--dark .compliance-table,
+.v-theme--dark .v-card {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.v-theme--dark .compliance-table :deep(.v-data-table-header) {
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+}
+
+.v-theme--dark .v-expansion-panels :deep(.v-expansion-panel) {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+
+.v-theme--dark .v-expansion-panels :deep(.v-expansion-panel-title) {
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+}
+
+.v-theme--dark .v-expansion-panels :deep(.v-expansion-panel-text) {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+
+/* Animation classes */
+@keyframes compliance-pulse {
+  0%, 100% { 
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 8px 30px rgba(16, 185, 129, 0.5);
+    transform: scale(1.02);
+  }
+}
+
+.compliance-pulse {
+  animation: compliance-pulse 2s infinite;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fade-in-up 0.6s ease-out;
+}
+
+/* Custom scrollbar for panels */
+.v-expansion-panels :deep(.v-expansion-panel-text)::-webkit-scrollbar {
+  width: 6px;
+}
+
+.v-expansion-panels :deep(.v-expansion-panel-text)::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.v-expansion-panels :deep(.v-expansion-panel-text)::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.4) 0%, rgba(16, 185, 129, 0.2) 100%);
+  border-radius: 3px;
+}
+
+.v-expansion-panels :deep(.v-expansion-panel-text)::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.6) 0%, rgba(16, 185, 129, 0.4) 100%);
 }
 </style>

@@ -201,8 +201,21 @@ const handleResize = () => {
 <style scoped>
 /* Main content styling */
 .main-content {
-  background-color: #fafafa;
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
   min-height: calc(100vh - 96px);
+  position: relative;
+}
+
+.main-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(0,0,0,0.02)" stroke-width="1"/></pattern></defs><rect width="60" height="60" fill="url(%23grid)"/></svg>');
+  pointer-events: none;
+  z-index: 0;
 }
 
 .border-t {
@@ -212,39 +225,84 @@ const handleResize = () => {
 /* Page transition animations */
 .page-enter-active,
 .page-leave-active {
-  transition: all 0.2s ease-out;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .page-enter-from {
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateY(20px) scale(0.98);
 }
 
 .page-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(-10px) scale(1.02);
 }
 
 /* App bar customizations */
 .v-app-bar {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08) !important;
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%) !important;
+  backdrop-filter: blur(10px);
 }
 
 .v-app-bar .v-toolbar-title {
   flex: none;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
   letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.v-app-bar .v-btn {
+  border-radius: 12px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.v-app-bar .v-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* Navigation drawer customizations */
 :deep(.v-navigation-drawer) {
-  border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+  border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%) !important;
 }
 
 /* Footer customizations */
 .v-footer {
   font-size: 12px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+.v-footer .v-chip {
+  border-radius: 8px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Loading overlay */
+.v-overlay {
+  backdrop-filter: blur(4px) !important;
+}
+
+.v-overlay .v-progress-circular {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Snackbar improvements */
+.v-snackbar {
+  border-radius: 12px !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12) !important;
+  backdrop-filter: blur(10px);
+}
+
+.v-snackbar .v-btn {
+  border-radius: 8px !important;
 }
 
 /* Responsive adjustments */
@@ -257,10 +315,59 @@ const handleResize = () => {
 
 /* Dark theme adjustments */
 .v-theme--dark .main-content {
-  background-color: #121212;
+  background: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
+}
+
+.v-theme--dark .main-content::before {
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></pattern></defs><rect width="60" height="60" fill="url(%23grid)"/></svg>');
 }
 
 .v-theme--dark .border-t {
   border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.v-theme--dark .v-app-bar {
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%) !important;
+}
+
+.v-theme--dark :deep(.v-navigation-drawer) {
+  background: linear-gradient(180deg, #1e1e1e 0%, #121212 100%) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.v-theme--dark .v-footer {
+  background: linear-gradient(135deg, #1e1e1e 0%, #121212 100%) !important;
+}
+
+/* Micro-animations for interactive elements */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* Enhanced focus states */
+:deep(.v-btn:focus-visible) {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.1) !important;
+}
+
+:deep(.v-text-field input:focus) {
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1) !important;
 }
 </style>

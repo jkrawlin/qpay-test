@@ -404,29 +404,151 @@ onMounted(() => {
 /* Focus and hover states */
 .v-text-field:focus-within {
   transform: translateY(-2px);
-  transition: transform 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 25px rgba(25, 118, 210, 0.15);
+}
+
+.v-btn {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .v-btn:hover {
-  transform: translateY(-2px);
-  transition: transform 0.2s ease;
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.v-btn.v-btn--variant-elevated {
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+}
+
+.v-btn.v-btn--variant-elevated:hover {
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+  box-shadow: 0 8px 25px rgba(25, 118, 210, 0.4);
+}
+
+.v-btn.v-btn--variant-outlined {
+  border: 2px solid #1976d2;
+  background: transparent;
+}
+
+.v-btn.v-btn--variant-outlined:hover {
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(25, 118, 210, 0.05) 100%);
+  border-color: #1565c0;
+}
+
+/* Enhanced form field styling */
+.v-text-field {
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+}
+
+.v-text-field .v-field {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.v-text-field .v-field:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.v-text-field .v-field--focused {
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
+}
+
+/* Checkbox enhancements */
+.v-checkbox {
+  transition: all 0.2s ease;
+}
+
+.v-checkbox:hover {
+  transform: scale(1.05);
+}
+
+/* Link enhancements */
+.v-btn.v-btn--variant-text {
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.v-btn.v-btn--variant-text:hover {
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(25, 118, 210, 0.05) 100%);
+  transform: translateX(2px);
 }
 
 /* Loading states */
 .v-btn--loading {
   pointer-events: none;
+  position: relative;
+}
+
+.v-btn--loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Card enhancements */
+.v-card {
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.v-card:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Divider styling */
+.v-divider {
+  opacity: 0.6;
+  margin: 16px 0;
 }
 
 /* Dark theme support */
 .v-theme--dark .login-page {
-  background: #121212;
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
 }
 
 .v-theme--dark .login-form-panel {
-  background: #1e1e1e;
+  background: linear-gradient(135deg, #1c2128 0%, #161b22 100%);
 }
 
 .v-theme--dark .feature-item {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.v-theme--dark .v-text-field .v-field {
   background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.v-theme--dark .v-text-field .v-field:hover {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+.v-theme--dark .v-card {
+  background: linear-gradient(135deg, #1c2128 0%, #161b22 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 </style>
