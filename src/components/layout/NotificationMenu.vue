@@ -5,7 +5,7 @@
         v-bind="props"
         icon
         size="large"
-        :color="hasUnreadNotifications ? 'warning' : 'default'"
+        color="white"
       >
         <v-badge
           :content="unreadCount"

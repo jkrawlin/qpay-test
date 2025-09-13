@@ -1,6 +1,50 @@
 <template>
   <div class="payroll-dashboard">
-    <v-container fluid>
+    <!-- Enhanced Header -->
+    <div class="enhanced-header mb-spacing-xl">
+      <v-container fluid class="pa-spacing-lg">
+        <div class="d-flex align-center justify-space-between">
+          <div>
+            <h1 class="text-h4 font-weight-bold mb-2">
+              <v-icon size="32" class="mr-3 text-primary">mdi-cash-multiple</v-icon>
+              Payroll Management
+            </h1>
+            <p class="text-subtitle-1 text-medium-emphasis ma-0">
+              Process payroll, manage salaries, and generate payslips for all employees
+            </p>
+          </div>
+          <div class="d-flex gap-3">
+            <v-btn
+              color="success"
+              size="large"
+              elevation="2"
+              @click="processPayroll"
+              :loading="processing"
+              class="enhanced-btn"
+            >
+              <template #prepend>
+                <v-icon>mdi-play</v-icon>
+              </template>
+              Process Payroll
+            </v-btn>
+            <v-btn
+              variant="outlined"
+              color="primary"
+              size="large"
+              @click="exportPayroll"
+              class="enhanced-btn"
+            >
+              <template #prepend>
+                <v-icon>mdi-download</v-icon>
+              </template>
+              Export Data
+            </v-btn>
+          </div>
+        </div>
+      </v-container>
+    </div>
+
+    <v-container fluid class="pa-spacing-lg">
       <!-- Header Section -->
       <v-row class="mb-3">
         <v-col cols="12">
@@ -20,7 +64,7 @@
                 :loading="processing"
               >
                 <template #prepend>
-                  <Icon icon="material-symbols:play-arrow" :width="16" :height="16" />
+                  <v-icon>mdi-play</v-icon>
                 </template>
                 Process Payroll
               </v-btn>
@@ -31,7 +75,7 @@
                 @click="exportPayroll"
               >
                 <template #prepend>
-                  <Icon icon="material-symbols:download" :width="16" :height="16" />
+                  <v-icon>mdi-download</v-icon>
                 </template>
                 Export Report
               </v-btn>

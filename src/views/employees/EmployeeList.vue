@@ -1,45 +1,56 @@
 <template>
-  <div class="employee-list">
+  <div class="employee-list enhanced-page">
     <!-- Header Section -->
-    <div class="page-header">
-      <div class="d-flex align-center justify-space-between">
-        <div>
-          <h1 class="text-h5 font-weight-medium text-primary mb-1">Employee Management</h1>
-          <p class="text-body-2 text-grey-darken-1 ma-0">
-            Manage your workforce with Qatar-specific compliance tracking
-          </p>
+    <div class="page-header enhanced-header bg-gradient-primary-light">
+      <v-container fluid class="pa-6">
+        <div class="d-flex align-center justify-space-between">
+          <div class="fade-in">
+            <h1 class="text-h4 font-weight-bold text-white mb-2">Employee Management</h1>
+            <p class="text-body-1 text-white opacity-90 ma-0">
+              Manage your workforce with Qatar-specific compliance tracking
+            </p>
+          </div>
+          <v-btn
+            color="white"
+            variant="elevated"
+            size="large"
+            :to="{ name: 'EmployeeCreate' }"
+            class="enhanced-btn fade-in-delay-1"
+            elevation="4"
+          >
+            <template #prepend>
+              <v-icon>mdi-account-plus</v-icon>
+            </template>
+            Add Employee
+          </v-btn>
         </div>
-        <v-btn
-          color="primary"
-          size="small"
-          :to="{ name: 'EmployeeCreate' }"
-          class="text-none"
-        >
-          <template #prepend>
-            <Icon icon="material-symbols:person-add" :width="16" :height="16" />
-          </template>
-          Add Employee
-        </v-btn>
-      </div>
+      </v-container>
     </div>
 
-    <v-container fluid class="pa-4">
+    <v-container fluid class="pa-6">
       <!-- Filters and Search -->
-      <v-card class="mb-4 filter-card" elevation="1">
-        <v-card-text class="pa-3">
+      <v-card class="enhanced-card mb-8 filter-card" elevation="4">
+        <v-card-title class="bg-surface pa-spacing-lg">
+          <div class="d-flex align-center">
+            <v-icon class="mr-3" color="primary">mdi-filter-variant</v-icon>
+            <span class="text-h6 font-weight-bold">Filters & Search</span>
+          </div>
+        </v-card-title>
+        <v-card-text class="pa-spacing-lg">
           <v-row dense>
             <v-col cols="12" md="4">
               <v-text-field
                 v-model="searchQuery"
                 label="Search employees..."
                 variant="outlined"
-                density="compact"
+                density="comfortable"
                 clearable
                 hide-details
+                class="enhanced-input"
                 @input="debouncedSearch"
               >
                 <template #prepend-inner>
-                  <Icon icon="material-symbols:search" :width="18" :height="18" />
+                  <v-icon size="18">mdi-magnify</v-icon>
                 </template>
               </v-text-field>
             </v-col>
@@ -48,7 +59,7 @@
                 v-model="selectedDepartment"
                 label="Department"
                 variant="outlined"
-                density="compact"
+                density="comfortable"
                 clearable
                 hide-details
                 placeholder="Filter by department"
@@ -101,7 +112,7 @@
                   <div class="text-h6 font-weight-bold">{{ totalEmployees }}</div>
                   <div class="text-caption">Total Employees</div>
                 </div>
-                <Icon icon="material-symbols:group" :width="24" :height="24" />
+                <v-icon size="24">mdi-account-group</v-icon>
               </div>
             </v-card-text>
           </v-card>
@@ -114,7 +125,7 @@
                   <div class="text-h6 font-weight-bold">{{ activeEmployees }}</div>
                   <div class="text-caption">Active</div>
                 </div>
-                <Icon icon="material-symbols:verified-user" :width="24" :height="24" />
+                <v-icon size="24">mdi-account-check</v-icon>
               </div>
             </v-card-text>
           </v-card>
@@ -127,7 +138,7 @@
                   <div class="text-h6 font-weight-bold">{{ expiringDocuments }}</div>
                   <div class="text-caption">Expiring Soon</div>
                 </div>
-                <Icon icon="material-symbols:warning" :width="24" :height="24" />
+                <v-icon size="24">mdi-alert</v-icon>
               </div>
             </v-card-text>
           </v-card>
@@ -140,7 +151,7 @@
                   <div class="text-h6 font-weight-bold">{{ onLeaveEmployees }}</div>
                   <div class="text-caption">On Leave</div>
                 </div>
-                <Icon icon="material-symbols:schedule" :width="24" :height="24" />
+                <v-icon size="24">mdi-calendar-clock</v-icon>
               </div>
             </v-card-text>
           </v-card>
@@ -148,39 +159,54 @@
       </v-row>
 
       <!-- Employee Data Table -->
-      <v-card elevation="1" class="employee-table-card">
-        <v-card-title class="d-flex align-center justify-space-between pa-4">
-          <span class="text-subtitle-1 font-weight-medium">Employee Directory</span>
-          <div class="d-flex align-center gap-2">
+      <v-card class="enhanced-card employee-table-card" elevation="4">
+        <v-card-title class="d-flex align-center justify-space-between bg-surface pa-spacing-lg">
+          <div class="d-flex align-center">
+            <v-icon class="mr-3" color="primary">mdi-account-group</v-icon>
+            <span class="text-h6 font-weight-bold">Employee Directory</span>
+          </div>
+          <div class="d-flex align-center gap-3">
             <v-btn
-              variant="text"
+              variant="outlined"
               size="small"
+              class="enhanced-btn"
               @click="exportEmployees"
               title="Export to Excel"
             >
-              <Icon icon="material-symbols:download" :width="18" :height="18" />
+              <v-icon class="mr-2">mdi-download</v-icon>
+              Export
             </v-btn>
             <v-btn
-              variant="text"
+              variant="outlined"
               size="small"
+              class="enhanced-btn"
               @click="refreshData"
               :loading="loading"
               title="Refresh"
             >
-              <Icon icon="material-symbols:refresh" :width="18" :height="18" />
+              <v-icon>mdi-refresh</v-icon>
             </v-btn>
           </div>
         </v-card-title>
         
+        <!-- Loading State with Skeleton -->
+        <div v-if="loading" class="table-loading pa-spacing-xl">
+          <SkeletonLoader variant="card" :lines="1" class="mb-4" />
+          <SkeletonLoader variant="text" :lines="8" class="mb-3" />
+          <SkeletonLoader variant="text" :lines="8" class="mb-3" />
+          <SkeletonLoader variant="text" :lines="8" />
+        </div>
+        
+        <!-- Data Table -->
         <v-data-table
+          v-else
           v-model:items-per-page="itemsPerPage"
           :headers="headers"
           :items="filteredEmployees"
-          :loading="loading"
           :search="searchQuery"
-          class="employee-table"
+          class="enhanced-table employee-table"
           item-value="id"
-          density="compact"
+          density="comfortable"
           hover
           @click:row="openEmployeeDetails"
         >
@@ -253,10 +279,10 @@
                 color="primary"
                 size="small"
                 class="action-btn"
-                @click.stop="openEmployeeDetails(null, item)"
+                @click.stop="openEmployeeDetails($event, item)"
                 title="View Details"
               >
-                <Icon icon="material-symbols:visibility" :width="16" :height="16" />
+                <v-icon size="16">mdi-eye</v-icon>
               </v-btn>
               <v-btn
                 variant="text"
@@ -266,7 +292,7 @@
                 @click.stop="editEmployee(item)"
                 title="Edit Employee"
               >
-                <Icon icon="material-symbols:edit" :width="16" :height="16" />
+                <v-icon size="16">mdi-pencil</v-icon>
               </v-btn>
               <v-menu>
                 <template #activator="{ props }">
@@ -278,17 +304,26 @@
                     v-bind="props"
                     title="More Actions"
                   >
-                    <Icon icon="material-symbols:more-vert" :width="16" :height="16" />
+                    <v-icon size="16">mdi-dots-vertical</v-icon>
                   </v-btn>
                 </template>
                 <v-list density="compact">
                   <v-list-item @click="generatePayslip(item)">
+                    <template #prepend>
+                      <v-icon size="18">mdi-file-document</v-icon>
+                    </template>
                     <v-list-item-title>Generate Payslip</v-list-item-title>
                   </v-list-item>
                   <v-list-item @click="viewDocuments(item)">
+                    <template #prepend>
+                      <v-icon size="18">mdi-folder-open</v-icon>
+                    </template>
                     <v-list-item-title>View Documents</v-list-item-title>
                   </v-list-item>
                   <v-list-item @click="deactivateEmployee(item)" :disabled="item.status === 'Inactive'">
+                    <template #prepend>
+                      <v-icon size="18">mdi-account-off</v-icon>
+                    </template>
                     <v-list-item-title>Deactivate</v-list-item-title>
                   </v-list-item>
                 </v-list>
@@ -330,7 +365,7 @@
                 :color="editMode ? 'primary' : 'primary'"
                 title="Edit Mode"
               >
-                <Icon icon="material-symbols:edit" :width="18" :height="18" />
+                <v-icon size="18">mdi-pencil</v-icon>
               </v-btn>
               <v-btn
                 variant="text"
@@ -338,7 +373,7 @@
                 @click="closeEmployeeDialog"
                 title="Close"
               >
-                <Icon icon="material-symbols:close" :width="18" :height="18" />
+                <v-icon size="18">mdi-close</v-icon>
               </v-btn>
             </div>
           </v-card-title>
@@ -552,7 +587,7 @@
                               @click="viewDocument(selectedEmployee.qatarIdDocument)"
                               title="View Document"
                             >
-                              <Icon icon="material-symbols:visibility" :width="16" :height="16" />
+                              <v-icon size="16">mdi-eye</v-icon>
                             </v-btn>
                             <v-btn
                               v-if="editMode"
@@ -563,7 +598,7 @@
                               @click="removeDocument('qatarIdDocument')"
                               title="Remove Document"
                             >
-                              <Icon icon="material-symbols:delete" :width="16" :height="16" />
+                              <v-icon size="16">mdi-delete</v-icon>
                             </v-btn>
                           </div>
                         </div>
@@ -580,7 +615,7 @@
                           hide-details
                         >
                           <template #prepend>
-                            <Icon icon="material-symbols:attach-file" :width="18" :height="18" />
+                            <v-icon size="18">mdi-paperclip</v-icon>
                           </template>
                         </v-file-input>
                       </div>
@@ -681,6 +716,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { debounce } from 'lodash-es'
+import SkeletonLoader from '@/components/common/SkeletonLoader.vue'
 
 // Types
 interface Employee {
@@ -937,7 +973,8 @@ const debouncedSearch = debounce(() => {
   // Search functionality will be handled by v-data-table
 }, 300)
 
-const openEmployeeDetails = (event: any, { item }: { item: Employee }) => {
+const openEmployeeDetails = (_event: any, itemOrWrapper: Employee | { item: Employee }) => {
+  const item = 'item' in itemOrWrapper ? itemOrWrapper.item : itemOrWrapper
   selectedEmployee.value = { ...item }
   editMode.value = false
   employeeDialog.value = true

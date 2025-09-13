@@ -5,6 +5,7 @@ import { registerSW } from 'virtual:pwa-register'
 
 // Vuetify
 import 'vuetify/styles'
+import '@mdi/font/css/materialdesignicons.css'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
 import { fa } from 'vuetify/iconsets/fa'
 import * as components from 'vuetify/components'
@@ -31,6 +32,7 @@ import router from './router'
 
 // Global Styles
 import './style.css'
+import './styles/globals.scss'
 
 // Firebase
 import { initializeFirebase } from './firebase/config'
@@ -51,7 +53,7 @@ const vuetify = createVuetify({
   components,
   directives,
   icons: {
-    defaultSet: 'fa',
+    defaultSet: 'mdi',
     aliases,
     sets: {
       mdi,

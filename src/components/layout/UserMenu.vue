@@ -5,6 +5,7 @@
         v-bind="props"
         icon
         size="large"
+        color="white"
       >
         <v-avatar
           :size="36"

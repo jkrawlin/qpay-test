@@ -13,7 +13,9 @@
           @click="drawer = !drawer"
           aria-label="Toggle navigation menu"
           size="small"
-        />
+        >
+          <v-icon>mdi-menu</v-icon>
+        </v-app-bar-nav-icon>
         
         <v-toolbar-title class="text-subtitle-1 font-weight-medium">
           <v-icon class="mr-2" size="20">mdi-office-building</v-icon>
@@ -42,11 +44,25 @@
 
       <!-- Main Content -->
       <v-main>
-        <div class="main-content">
+        <div class="main-content enhanced-main">
           <!-- Route Transition -->
-          <router-view v-slot="{ Component }">
-            <transition name="page" mode="out-in">
-              <component :is="Component" />
+          <router-view v-slot="{ Component, route }">
+            <transition 
+              :name="getTransitionName(route)" 
+              mode="out-in"
+              @enter="onEnter"
+              @leave="onLeave"
+            >
+              <Suspense>
+                <template #default>
+                  <component :is="Component" :key="route.path" />
+                </template>
+                <template #fallback>
+                  <div class="route-loading">
+                    <LoadingSpinner size="large" text="Loading page..." />
+                  </div>
+                </template>
+              </Suspense>
             </transition>
           </router-view>
         </div>
@@ -114,21 +130,19 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onErrorCaptured } from 'vue'
-import { useDisplay } from 'vuetify'
 import { useOnline } from '@vueuse/core'
 import { useAppStore } from '@/stores/app'
-import { useRouter } from 'vue-router'
+import type { RouteLocationNormalized } from 'vue-router'
 
 // Components
 import NavigationDrawer from '@/components/layout/NavigationDrawer.vue'
 import NotificationMenu from '@/components/layout/NotificationMenu.vue'
 import UserMenu from '@/components/layout/UserMenu.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 // Composables
-const { mobile } = useDisplay()
 const isOnline = useOnline()
 const appStore = useAppStore()
-const router = useRouter()
 
 // Global error handling
 onErrorCaptured((error, instance, info) => {
@@ -144,16 +158,30 @@ onErrorCaptured((error, instance, info) => {
 const drawer = ref(false)
 
 // Computed properties
-const isMobile = computed(() => {
-  // Temporarily disable mobile detection for testing
-  return false
-})
-
 const currentYear = computed(() => new Date().getFullYear())
-
 const isLoading = computed(() => appStore.isLoading)
-
 const snackbar = computed(() => appStore.snackbar)
+
+// Methods
+const getTransitionName = (route: RouteLocationNormalized) => {
+  // Different transitions for different route types
+  if (route.meta?.transition) {
+    return route.meta.transition as string
+  }
+  
+  // Default slide transition
+  return 'slide-fade'
+}
+
+const onEnter = () => {
+  // Animation started
+  appStore.setLoading(false)
+}
+
+const onLeave = () => {
+  // Animation started
+  appStore.setLoading(true)
+}
 
 // Lifecycle
 onMounted(() => {
@@ -167,12 +195,11 @@ onMounted(() => {
   window.addEventListener('resize', handleResize)
 })
 
-// Methods
 const checkForUpdates = () => {
-  if ('serviceWorker' in navigator && window.updateSW) {
+  if ('serviceWorker' in navigator && (window as any).updateSW) {
     // Check for updates periodically
     setInterval(() => {
-      window.updateSW(true)
+      (window as any).updateSW(true)
     }, 60000) // Check every minute
   }
 }
@@ -195,50 +222,137 @@ const handleResize = () => {
 <style scoped>
 /* Main content styling */
 .main-content {
-  background-color: #fafafa;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   min-height: calc(100vh - 96px);
+}
+
+.enhanced-main {
+  position: relative;
+  overflow: hidden;
+}
+
+.route-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: var(--spacing-xl);
 }
 
 .border-t {
   border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
 
-/* Page transition animations */
-.page-enter-active,
-.page-leave-active {
-  transition: all 0.2s ease-out;
+/* Enhanced page transition animations */
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.page-enter-from {
+.slide-fade-enter-from {
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateX(30px);
 }
 
-.page-leave-to {
+.slide-fade-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateX(-30px);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.zoom-enter-active,
+.zoom-leave-active {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.zoom-enter-from {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.zoom-leave-to {
+  opacity: 0;
+  transform: scale(1.05);
 }
 
 /* App bar customizations */
 .v-app-bar {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+  box-shadow: var(--shadow-md) !important;
+  backdrop-filter: blur(10px);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%) !important;
 }
 
 .v-app-bar .v-toolbar-title {
   flex: none;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
   letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.v-app-bar .v-app-bar-nav-icon {
+  transition: all var(--transition-fast);
+}
+
+.v-app-bar .v-app-bar-nav-icon:hover {
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Navigation drawer customizations */
 :deep(.v-navigation-drawer) {
-  border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+  border-right: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(10px);
 }
 
 /* Footer customizations */
 .v-footer {
   font-size: 12px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+  border-top: 1px solid var(--color-border) !important;
+}
+
+.v-footer .v-chip {
+  transition: all var(--transition-fast);
+}
+
+.v-footer .v-chip:hover {
+  transform: scale(1.05);
+}
+
+/* Loading overlay enhancements */
+:deep(.v-overlay) {
+  backdrop-filter: blur(4px);
+}
+
+:deep(.v-overlay .v-overlay__content) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Snackbar enhancements */
+:deep(.v-snackbar) {
+  backdrop-filter: blur(10px);
+}
+
+:deep(.v-snackbar .v-snackbar__wrapper) {
+  border-radius: var(--border-radius-lg) !important;
+  box-shadow: var(--shadow-lg);
 }
 
 /* Responsive adjustments */
@@ -249,12 +363,69 @@ const handleResize = () => {
   }
 }
 
+@media (max-width: 768px) {
+  .main-content {
+    min-height: calc(100vh - 88px);
+  }
+  
+  .v-app-bar .v-toolbar-title {
+    font-size: 1rem;
+  }
+  
+  .route-loading {
+    min-height: 300px;
+    padding: var(--spacing-lg);
+  }
+}
+
 /* Dark theme adjustments */
 .v-theme--dark .main-content {
-  background-color: #121212;
+  background: linear-gradient(135deg, #121212 0%, #1e1e1e 100%);
 }
 
 .v-theme--dark .border-t {
   border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.v-theme--dark .v-app-bar {
+  background: linear-gradient(135deg, #0D47A1 0%, #1565C0 100%) !important;
+}
+
+.v-theme--dark .v-footer {
+  background: linear-gradient(135deg, #1e1e1e 0%, #121212 100%) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.v-theme--dark :deep(.v-overlay .v-overlay__content) {
+  background: rgba(30, 30, 30, 0.95);
+  color: white;
+}
+
+/* Performance optimizations */
+.main-content {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.v-app-bar {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .slide-fade-enter-active,
+  .slide-fade-leave-active,
+  .fade-enter-active,
+  .fade-leave-active,
+  .zoom-enter-active,
+  .zoom-leave-active {
+    transition: none;
+  }
+  
+  .v-app-bar .v-app-bar-nav-icon,
+  .v-footer .v-chip {
+    transition: none;
+  }
 }
 </style>
