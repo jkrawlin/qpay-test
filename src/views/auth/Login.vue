@@ -6,9 +6,7 @@
         <v-col cols="12" md="6" class="login-branding d-none d-md-flex">
           <div class="branding-content">
             <div class="logo-section">
-              <v-icon size="80" color="white" class="mb-4">
-                mdi-account-group
-              </v-icon>
+              <Icon icon="material-symbols:business" :width="80" :height="80" color="white" class="mb-4" />
               <h1 class="text-h3 font-weight-bold text-white mb-4">
                 Nipon Payroll Pro
               </h1>
@@ -19,7 +17,7 @@
             
             <div class="features-list">
               <div class="feature-item" v-for="feature in features" :key="feature.title">
-                <v-icon color="white" class="mr-3">{{ feature.icon }}</v-icon>
+                <Icon :icon="feature.icon" :width="24" :height="24" color="white" class="mr-3" />
                 <div>
                   <div class="text-body-1 font-weight-medium text-white">
                     {{ feature.title }}
@@ -38,9 +36,7 @@
           <div class="login-form-container">
             <!-- Mobile Logo -->
             <div class="mobile-logo d-md-none text-center mb-6">
-              <v-icon size="60" color="primary" class="mb-2">
-                mdi-account-group
-              </v-icon>
+              <Icon icon="material-symbols:business" :width="60" :height="60" color="primary" class="mb-2" />
               <h2 class="text-h5 font-weight-bold text-primary">
                 Nipon Payroll Pro
               </h2>
@@ -59,7 +55,7 @@
                   label="Email Address"
                   type="email"
                   variant="outlined"
-                  prepend-inner-icon="mdi-email"
+                  prepend-inner-icon="mdi-email-outline"
                   :rules="emailRules"
                   :error-messages="fieldErrors.email"
                   class="mb-4"
@@ -71,8 +67,8 @@
                   label="Password"
                   :type="showPassword ? 'text' : 'password'"
                   variant="outlined"
-                  prepend-inner-icon="mdi-lock"
-                  :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+                  prepend-inner-icon="mdi-lock-outline"
+                  :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
                   @click:append-inner="showPassword = !showPassword"
                   :rules="passwordRules"
                   :error-messages="fieldErrors.password"
@@ -175,6 +171,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
+import { Icon } from '@iconify/vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -215,22 +212,22 @@ const features = [
   {
     title: 'Employee Management',
     description: 'Complete HR solution with Qatar compliance',
-    icon: 'mdi-account-group'
+    icon: 'material-symbols:group'
   },
   {
     title: 'Payroll Processing',
     description: 'Automated salary calculations and payments',
-    icon: 'mdi-cash'
+    icon: 'material-symbols:payments'
   },
   {
     title: 'Compliance Tracking',
     description: 'Qatar ID, passport, and visa monitoring',
-    icon: 'mdi-shield-check'
+    icon: 'material-symbols:verified-user'
   },
   {
     title: 'Financial Reports',
     description: 'Comprehensive accounting and analytics',
-    icon: 'mdi-chart-line'
+    icon: 'material-symbols:analytics'
   }
 ]
 
@@ -339,10 +336,18 @@ onMounted(() => {
   display: flex;
   align-items: flex-start;
   margin-bottom: 24px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
   backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .login-form-panel {
@@ -355,7 +360,11 @@ onMounted(() => {
 
 .login-form-container {
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
+  padding: 40px;
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
 
 .login-form {
@@ -381,13 +390,19 @@ onMounted(() => {
     padding: 24px 16px;
   }
   
+  .login-form-container {
+    padding: 32px 24px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+  
   .branding-content {
     padding: 32px;
   }
   
   .feature-item {
     margin-bottom: 16px;
-    padding: 12px;
+    padding: 16px;
   }
 }
 
@@ -396,9 +411,20 @@ onMounted(() => {
   margin-bottom: 0;
 }
 
+.v-text-field :deep(.v-field) {
+  border-radius: 12px;
+}
+
 .v-btn {
   text-transform: none;
   font-weight: 500;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
+}
+
+.v-btn--size-large {
+  height: 56px;
+  font-size: 16px;
 }
 
 /* Focus and hover states */
@@ -410,6 +436,7 @@ onMounted(() => {
 .v-btn:hover {
   transform: translateY(-2px);
   transition: transform 0.2s ease;
+  box-shadow: 0 8px 25px rgba(25, 118, 210, 0.3);
 }
 
 /* Loading states */
