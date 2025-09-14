@@ -1,466 +1,582 @@
 <template>
   <v-container fluid>
-    <v-card>
-      <v-card-title>
-        <v-icon left>mdi-table-large</v-icon>
-        Accounting Ledger
-        <v-spacer></v-spacer>
-        <v-btn color="primary" @click="saveData" :loading="saving">
-          <v-icon left>mdi-content-save</v-icon>
-          Save Changes
-        </v-btn>
-        <v-btn color="secondary" @click="exportExcel" class="ml-2">
-          <v-icon left>mdi-microsoft-excel</v-icon>
-          Export Excel
-        </v-btn>
-      </v-card-title>
+    <v-row>
+      <v-col cols="12">
+        <!-- Header -->
+        <div class="d-flex justify-space-between align-center mb-6">
+          <div>
+            <h1 class="text-h4 font-weight-bold">Accounting Ledger</h1>
+            <p class="text-subtitle-1 text-medium-emphasis">
+              Track income and expenses with Qatar VAT compliance
+            </p>
+          </div>
+          <v-btn
+            color="primary"
+            size="large"
+            @click="openAddDialog"
+          >
+            <v-icon start>mdi-plus</v-icon>
+            Add Entry
+          </v-btn>
+        </div>
 
-      <v-card-subtitle>
-        <v-chip-group v-model="selectedFilter" mandatory>
-          <v-chip value="all">All Entries</v-chip>
-          <v-chip value="income" color="success">Income</v-chip>
-          <v-chip value="expense" color="error">Expenses</v-chip>
-          <v-chip value="pending" color="warning">Pending</v-chip>
-        </v-chip-group>
-      </v-card-subtitle>
-
-      <v-card-text>
         <!-- Summary Cards -->
-        <v-row class="mb-4">
+        <v-row class="mb-6">
           <v-col cols="12" md="3">
-            <v-card color="success" dark flat>
+            <v-card>
               <v-card-text>
-                <div class="text-overline">Total Income</div>
-                <div class="text-h5">QAR {{ totalIncome.toLocaleString() }}</div>
+                <div class="text-h6 text-success">Total Income</div>
+                <div class="text-h5 font-weight-bold">QAR {{ totalIncome.toLocaleString() }}</div>
               </v-card-text>
             </v-card>
           </v-col>
           <v-col cols="12" md="3">
-            <v-card color="error" dark flat>
+            <v-card>
               <v-card-text>
-                <div class="text-overline">Total Expenses</div>
-                <div class="text-h5">QAR {{ totalExpenses.toLocaleString() }}</div>
+                <div class="text-h6 text-error">Total Expenses</div>
+                <div class="text-h5 font-weight-bold">QAR {{ totalExpenses.toLocaleString() }}</div>
               </v-card-text>
             </v-card>
           </v-col>
           <v-col cols="12" md="3">
-            <v-card color="info" dark flat>
+            <v-card>
               <v-card-text>
-                <div class="text-overline">Net Balance</div>
-                <div class="text-h5">QAR {{ netBalance.toLocaleString() }}</div>
+                <div class="text-h6">Net Profit</div>
+                <div class="text-h5 font-weight-bold" :class="netProfit >= 0 ? 'text-success' : 'text-error'">
+                  QAR {{ netProfit.toLocaleString() }}
+                </div>
               </v-card-text>
             </v-card>
           </v-col>
           <v-col cols="12" md="3">
-            <v-card color="warning" dark flat>
+            <v-card>
               <v-card-text>
-                <div class="text-overline">Pending</div>
-                <div class="text-h5">QAR {{ pendingAmount.toLocaleString() }}</div>
+                <div class="text-h6">Total Entries</div>
+                <div class="text-h5 font-weight-bold">{{ filteredData.length }}</div>
               </v-card-text>
             </v-card>
           </v-col>
         </v-row>
 
-        <!-- Handsontable Container -->
-        <div ref="hotTableContainer" id="accounting-table"></div>
+        <!-- Filters and Search -->
+        <v-row class="mb-4">
+          <v-col cols="12" md="4">
+            <v-select
+              v-model="selectedFilter"
+              :items="filterOptions"
+              label="Filter Entries"
+              variant="outlined"
+              density="compact"
+            />
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-text-field
+              v-model="search"
+              label="Search entries..."
+              prepend-inner-icon="mdi-magnify"
+              variant="outlined"
+              density="compact"
+              clearable
+            />
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-btn
+              color="success"
+              variant="outlined"
+              @click="exportExcel"
+              class="mr-2"
+            >
+              <v-icon start>mdi-file-excel</v-icon>
+              Export Excel
+            </v-btn>
+          </v-col>
+        </v-row>
 
-        <!-- Add New Entry Button -->
-        <v-btn
-          color="primary"
-          fab
-          fixed
-          bottom
-          right
-          @click="addNewRow"
-        >
-          <v-icon>mdi-plus</v-icon>
-        </v-btn>
-      </v-card-text>
-    </v-card>
+        <!-- Data Table -->
+        <v-card>
+          <v-data-table
+            :headers="tableHeaders"
+            :items="filteredData"
+            :search="search"
+            :loading="loading"
+            class="elevation-1"
+            item-value="id"
+          >
+            <template #item.type="{ item }">
+              <v-chip
+                :color="item.type === 'income' ? 'success' : 'error'"
+                variant="flat"
+                size="small"
+              >
+                {{ item.type }}
+              </v-chip>
+            </template>
+
+            <template #item.amount="{ item }">
+              QAR {{ item.amount.toLocaleString() }}
+            </template>
+
+            <template #item.vat="{ item }">
+              QAR {{ item.vat.toLocaleString() }}
+            </template>
+
+            <template #item.total="{ item }">
+              <strong>QAR {{ item.total.toLocaleString() }}</strong>
+            </template>
+
+            <template #item.status="{ item }">
+              <v-chip
+                :color="getStatusColor(item.status)"
+                variant="flat"
+                size="small"
+              >
+                {{ item.status }}
+              </v-chip>
+            </template>
+
+            <template #item.actions="{ item }">
+              <v-btn
+                icon="mdi-pencil"
+                size="small"
+                variant="text"
+                @click="editItem(item)"
+              />
+              <v-btn
+                icon="mdi-delete"
+                size="small"
+                variant="text"
+                color="error"
+                @click="confirmDelete(item)"
+              />
+            </template>
+          </v-data-table>
+        </v-card>
+
+        <!-- Add/Edit Entry Dialog -->
+        <v-dialog v-model="entryDialog" max-width="800px">
+          <v-card>
+            <v-card-title>
+              {{ selectedEntry ? 'Edit Entry' : 'Add New Entry' }}
+            </v-card-title>
+            <v-card-text>
+              <v-form>
+                <v-row>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="newEntry.date"
+                      label="Date"
+                      type="date"
+                      variant="outlined"
+                      required
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="newEntry.reference"
+                      label="Reference Number"
+                      variant="outlined"
+                      required
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-select
+                      v-model="newEntry.type"
+                      :items="typeOptions"
+                      label="Type"
+                      variant="outlined"
+                      required
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-select
+                      v-model="newEntry.category"
+                      :items="categoryOptions"
+                      label="Category"
+                      variant="outlined"
+                      required
+                    />
+                  </v-col>
+                  <v-col cols="12">
+                    <v-textarea
+                      v-model="newEntry.description"
+                      label="Description"
+                      variant="outlined"
+                      rows="2"
+                      required
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="newEntry.customer"
+                      label="Customer/Vendor"
+                      variant="outlined"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="newEntry.amount"
+                      label="Amount (QAR)"
+                      type="number"
+                      variant="outlined"
+                      required
+                      @input="calculateTotals"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="newEntry.vat"
+                      label="VAT (5%)"
+                      type="number"
+                      variant="outlined"
+                      readonly
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="newEntry.total"
+                      label="Total Amount"
+                      type="number"
+                      variant="outlined"
+                      readonly
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-select
+                      v-model="newEntry.paymentMethod"
+                      :items="paymentMethods"
+                      label="Payment Method"
+                      variant="outlined"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-select
+                      v-model="newEntry.status"
+                      :items="[
+                        { text: 'Pending', value: 'pending' },
+                        { text: 'Paid', value: 'paid' },
+                        { text: 'Overdue', value: 'overdue' }
+                      ]"
+                      label="Status"
+                      variant="outlined"
+                    />
+                  </v-col>
+                </v-row>
+              </v-form>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer />
+              <v-btn text @click="entryDialog = false">Cancel</v-btn>
+              <v-btn color="primary" @click="saveEntry" :loading="saving">
+                {{ selectedEntry ? 'Update' : 'Save' }}
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+        <!-- Delete Confirmation Dialog -->
+        <v-dialog v-model="deleteDialog" max-width="400px">
+          <v-card>
+            <v-card-title>Confirm Delete</v-card-title>
+            <v-card-text>
+              Are you sure you want to delete this entry? This action cannot be undone.
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer />
+              <v-btn text @click="deleteDialog = false">Cancel</v-btn>
+              <v-btn color="error" @click="deleteItem">Delete</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
-import { HotTable } from '@handsontable/vue3'
-import Handsontable from 'handsontable'
-import 'handsontable/dist/handsontable.full.css'
+import { ref, computed, onMounted } from 'vue'
+import { useAccountingStore } from '@/stores/accounting'
+import { useNotification } from '@/composables/useNotification'
 import * as XLSX from 'xlsx'
 
-const hotTableContainer = ref<HTMLElement>()
-const hotInstance = ref<Handsontable | null>(null)
+// const accountingStore = useAccountingStore() // For future integration
+const { showSuccess, showError } = useNotification()
+
+// Reactive state
 const saving = ref(false)
 const selectedFilter = ref('all')
-
 const data = ref<any[]>([])
+const loading = ref(false)
 
-// Chart of Accounts
-const chartOfAccounts = {
-  income: [
-    'Service Revenue',
-    'Contract Revenue',
-    'Interest Income',
-    'Other Income'
-  ],
-  expense: [
-    'Salaries & Wages',
-    'Rent Expense',
-    'Utilities',
-    'Office Supplies',
-    'Transportation',
-    'Marketing',
-    'Insurance',
-    'Depreciation',
-    'Other Expenses'
-  ]
-}
+// Table headers for v-data-table
+const tableHeaders = [
+  { title: 'Date', key: 'date', sortable: true },
+  { title: 'Reference #', key: 'reference', sortable: true },
+  { title: 'Type', key: 'type', sortable: true },
+  { title: 'Category', key: 'category', sortable: true },
+  { title: 'Description', key: 'description', sortable: false },
+  { title: 'Customer/Vendor', key: 'customer', sortable: true },
+  { title: 'Amount (QAR)', key: 'amount', sortable: true },
+  { title: 'VAT (5%)', key: 'vat', sortable: true },
+  { title: 'Total', key: 'total', sortable: true },
+  { title: 'Payment Method', key: 'paymentMethod', sortable: true },
+  { title: 'Status', key: 'status', sortable: true },
+  { title: 'Actions', key: 'actions', sortable: false }
+]
 
-const columns = [
-  {
-    data: 'date',
-    type: 'date',
-    dateFormat: 'DD/MM/YYYY',
-    title: 'Date',
-    width: 100
-  },
-  {
-    data: 'reference',
-    type: 'text',
-    title: 'Reference #',
-    width: 100
-  },
-  {
-    data: 'type',
-    type: 'dropdown',
-    source: ['Income', 'Expense'],
-    title: 'Type',
-    width: 80
-  },
-  {
-    data: 'category',
-    type: 'dropdown',
-    source: [...chartOfAccounts.income, ...chartOfAccounts.expense],
-    title: 'Category',
-    width: 150
-  },
-  {
-    data: 'description',
-    type: 'text',
-    title: 'Description',
-    width: 250
-  },
-  {
-    data: 'customer',
-    type: 'text',
-    title: 'Customer/Vendor',
-    width: 150
-  },
-  {
-    data: 'amount',
-    type: 'numeric',
-    numericFormat: {
-      pattern: '0,0.00',
-      culture: 'en-US'
-    },
-    title: 'Amount (QAR)',
-    width: 120
-  },
-  {
-    data: 'vat',
-    type: 'numeric',
-    numericFormat: {
-      pattern: '0,0.00',
-      culture: 'en-US'
-    },
-    title: 'VAT (5%)',
-    width: 100,
-    renderer: function(instance: any, td: any, row: number, col: number, prop: any, value: any, cellProperties: any) {
-      // Auto-calculate VAT
-      const amount = instance.getDataAtRowProp(row, 'amount')
-      if (amount && !value) {
-        value = amount * 0.05
-        instance.setDataAtRowProp(row, 'vat', value)
-      }
-      td.innerHTML = value ? value.toFixed(2) : '0.00'
-      return td
-    }
-  },
-  {
-    data: 'total',
-    type: 'numeric',
-    numericFormat: {
-      pattern: '0,0.00',
-      culture: 'en-US'
-    },
-    title: 'Total',
-    width: 120,
-    readOnly: true,
-    renderer: function(instance: any, td: any, row: number, col: number, prop: any, value: any, cellProperties: any) {
-      // Auto-calculate total
-      const amount = instance.getDataAtRowProp(row, 'amount') || 0
-      const vat = instance.getDataAtRowProp(row, 'vat') || 0
-      const total = amount + vat
-      td.innerHTML = total.toFixed(2)
-      td.style.fontWeight = 'bold'
-      return td
-    }
-  },
-  {
-    data: 'paymentMethod',
-    type: 'dropdown',
-    source: ['Cash', 'Bank Transfer', 'Cheque', 'Credit Card'],
-    title: 'Payment Method',
-    width: 120
-  },
-  {
-    data: 'status',
-    type: 'dropdown',
-    source: ['Paid', 'Pending', 'Overdue'],
-    title: 'Status',
-    width: 80,
-    renderer: function(instance: any, td: any, row: number, col: number, prop: any, value: any, cellProperties: any) {
-      td.innerHTML = value || 'Pending'
-      if (value === 'Paid') {
-        td.style.background = '#4CAF50'
-        td.style.color = 'white'
-      } else if (value === 'Pending') {
-        td.style.background = '#FFC107'
-        td.style.color = 'black'
-      } else if (value === 'Overdue') {
-        td.style.background = '#F44336'
-        td.style.color = 'white'
-      }
-      return td
-    }
-  },
-  {
-    data: 'notes',
-    type: 'text',
-    title: 'Notes',
-    width: 200
-  }
+const search = ref('')
+const newEntry = ref({
+  date: new Date().toISOString().substr(0, 10),
+  reference: '',
+  type: 'income',
+  category: '',
+  description: '',
+  customer: '',
+  amount: 0,
+  vat: 0,
+  total: 0,
+  paymentMethod: 'bank',
+  status: 'pending'
+})
+
+const entryDialog = ref(false)
+const deleteDialog = ref(false)
+const selectedEntry = ref<any>(null)
+
+// Filter options
+const filterOptions = [
+  { text: 'All Entries', value: 'all' },
+  { text: 'Income Only', value: 'income' },
+  { text: 'Expenses Only', value: 'expense' },
+  { text: 'Pending', value: 'pending' },
+  { text: 'Paid', value: 'paid' },
+  { text: 'This Month', value: 'this_month' }
+]
+
+const typeOptions = [
+  { text: 'Income', value: 'income' },
+  { text: 'Expense', value: 'expense' }
+]
+
+const categoryOptions = [
+  'Salary & Benefits',
+  'Office Rent',
+  'Utilities',
+  'Equipment',
+  'Travel & Transport',
+  'Marketing',
+  'Professional Services',
+  'Insurance',
+  'Taxes',
+  'Other'
+]
+
+const paymentMethods = [
+  { text: 'Bank Transfer', value: 'bank' },
+  { text: 'Cash', value: 'cash' },
+  { text: 'Credit Card', value: 'credit' },
+  { text: 'Cheque', value: 'cheque' }
 ]
 
 // Computed properties
+const filteredData = computed(() => {
+  if (!data.value) return []
+  
+  let filtered = [...data.value]
+  
+  if (selectedFilter.value === 'income') {
+    filtered = filtered.filter(item => item.type === 'income')
+  } else if (selectedFilter.value === 'expense') {
+    filtered = filtered.filter(item => item.type === 'expense')
+  } else if (selectedFilter.value === 'pending') {
+    filtered = filtered.filter(item => item.status === 'pending')
+  } else if (selectedFilter.value === 'paid') {
+    filtered = filtered.filter(item => item.status === 'paid')
+  } else if (selectedFilter.value === 'this_month') {
+    const currentMonth = new Date().getMonth()
+    const currentYear = new Date().getFullYear()
+    filtered = filtered.filter(item => {
+      const itemDate = new Date(item.date)
+      return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+    })
+  }
+  
+  return filtered
+})
+
 const totalIncome = computed(() => {
-  return data.value
-    .filter(row => row.type === 'Income' && row.status === 'Paid')
-    .reduce((sum, row) => sum + (row.total || row.amount || 0), 0)
+  return filteredData.value
+    .filter(item => item.type === 'income')
+    .reduce((sum, item) => sum + item.total, 0)
 })
 
 const totalExpenses = computed(() => {
-  return data.value
-    .filter(row => row.type === 'Expense' && row.status === 'Paid')
-    .reduce((sum, row) => sum + (row.total || row.amount || 0), 0)
+  return filteredData.value
+    .filter(item => item.type === 'expense')
+    .reduce((sum, item) => sum + item.total, 0)
 })
 
-const netBalance = computed(() => totalIncome.value - totalExpenses.value)
+const netProfit = computed(() => totalIncome.value - totalExpenses.value)
 
-const pendingAmount = computed(() => {
-  return data.value
-    .filter(row => row.status === 'Pending')
-    .reduce((sum, row) => sum + (row.total || row.amount || 0), 0)
-})
-
-// Initialize Handsontable
-const initializeTable = () => {
-  if (!hotTableContainer.value) return
-
-  const settings: Handsontable.GridSettings = {
-    data: data.value,
-    columns: columns,
-    stretchH: 'all',
-    autoWrapRow: true,
-    height: 600,
-    maxRows: 10000,
-    manualRowResize: true,
-    manualColumnResize: true,
-    rowHeaders: true,
-    colHeaders: true,
-    manualRowMove: true,
-    manualColumnMove: true,
-    contextMenu: true,
-    filters: true,
-    dropdownMenu: true,
-    multiColumnSorting: true,
-    undo: true,
-    licenseKey: 'non-commercial-and-evaluation',
-    afterChange: function(changes: any, source: string) {
-      if (source === 'loadData') return
-      
-      // Auto-save after changes
-      if (changes) {
-        saveDataDebounced()
-      }
-    },
-    beforeRemoveRow: function(index: number, amount: number) {
-      // Confirm before deleting
-      return confirm(`Delete ${amount} row(s)?`)
-    }
-  }
-
-  hotInstance.value = new Handsontable(hotTableContainer.value, settings)
-}
-
-// Load data from store
+// Methods
 const loadData = async () => {
+  loading.value = true
   try {
-    // Mock data - replace with actual service call
+    // Mock data for demonstration
     data.value = [
       {
-        date: '15/12/2024',
-        reference: 'REF-001',
-        type: 'Income',
-        category: 'Service Revenue',
-        description: 'Monthly service contract - Qatar National Industries',
-        customer: 'Qatar National Industries',
-        amount: 25000,
-        vat: 1250,
-        total: 26250,
-        paymentMethod: 'Bank Transfer',
-        status: 'Paid',
-        notes: 'Regular monthly payment'
+        id: 1,
+        date: '2024-01-15',
+        reference: 'INV-001',
+        type: 'income',
+        category: 'Professional Services',
+        description: 'Payroll processing service',
+        customer: 'ABC Company',
+        amount: 5000,
+        vat: 250,
+        total: 5250,
+        paymentMethod: 'bank',
+        status: 'paid'
       },
       {
-        date: '14/12/2024',
-        reference: 'REF-002',
-        type: 'Expense',
-        category: 'Salaries & Wages',
-        description: 'Staff salaries for December 2024',
-        customer: 'Internal',
-        amount: 45000,
-        vat: 0,
-        total: 45000,
-        paymentMethod: 'Bank Transfer',
-        status: 'Paid',
-        notes: 'Monthly payroll'
-      },
-      {
-        date: '13/12/2024',
-        reference: 'REF-003',
-        type: 'Income',
-        category: 'Contract Revenue',
-        description: 'Construction project milestone payment',
-        customer: 'Doha Development Co.',
-        amount: 75000,
-        vat: 3750,
-        total: 78750,
-        paymentMethod: 'Cheque',
-        status: 'Pending',
-        notes: 'Awaiting cheque clearance'
+        id: 2,
+        date: '2024-01-10',
+        reference: 'EXP-001',
+        type: 'expense',
+        category: 'Office Rent',
+        description: 'Monthly office rent',
+        customer: 'Property Management Co.',
+        amount: 3000,
+        vat: 150,
+        total: 3150,
+        paymentMethod: 'bank',
+        status: 'paid'
       }
     ]
   } catch (error) {
-    console.error('Failed to load accounting data:', error)
+    showError('Failed to load accounting data')
+  } finally {
+    loading.value = false
   }
 }
 
-// Save data
-const saveData = async () => {
-  if (!hotInstance.value) return
-  
-  saving.value = true
-  try {
-    const tableData = hotInstance.value.getData()
-    // Here you would save to your backend
-    console.log('Saving data:', tableData)
-    
-    // Show success message
-    setTimeout(() => {
-      saving.value = false
-      alert('Data saved successfully!')
-    }, 1000)
-  } catch (error) {
-    console.error('Failed to save data:', error)
-    saving.value = false
-    alert('Failed to save data')
-  }
+const calculateTotals = () => {
+  const amount = newEntry.value.amount || 0
+  newEntry.value.vat = Math.round(amount * 0.05 * 100) / 100 // 5% VAT
+  newEntry.value.total = amount + newEntry.value.vat
 }
 
-// Debounced save
-let saveTimeout: NodeJS.Timeout
-const saveDataDebounced = () => {
-  clearTimeout(saveTimeout)
-  saveTimeout = setTimeout(() => {
-    saveData()
-  }, 2000)
-}
-
-// Add new row
-const addNewRow = () => {
-  if (!hotInstance.value) return
-  
-  const newRow = {
-    date: new Date().toLocaleDateString('en-GB'),
-    reference: `REF-${Date.now()}`,
-    type: 'Income',
+const openAddDialog = () => {
+  newEntry.value = {
+    date: new Date().toISOString().substr(0, 10),
+    reference: '',
+    type: 'income',
     category: '',
     description: '',
     customer: '',
     amount: 0,
     vat: 0,
     total: 0,
-    paymentMethod: 'Cash',
-    status: 'Pending',
-    notes: ''
+    paymentMethod: 'bank',
+    status: 'pending'
   }
-  
-  hotInstance.value.alter('insert_row_at', 0, 1)
-  hotInstance.value.populateFromArray(0, 0, [Object.values(newRow)])
+  entryDialog.value = true
 }
 
-// Export to Excel
-const exportExcel = () => {
-  if (!hotInstance.value) return
-  
-  const tableData = hotInstance.value.getData()
-  const headers = hotInstance.value.getColHeader()
-  
-  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...tableData])
-  const workbook = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Accounting Data')
-  
-  XLSX.writeFile(workbook, `accounting_${new Date().toISOString().split('T')[0]}.xlsx`)
-}
+const saveEntry = async () => {
+  if (!newEntry.value.reference || !newEntry.value.description) {
+    showError('Please fill in all required fields')
+    return
+  }
 
-// Filter data
-watch(selectedFilter, (newFilter) => {
-  if (!hotInstance.value) return
-  
-  const filtersPlugin = hotInstance.value.getPlugin('filters')
-  filtersPlugin.clearConditions()
-  
-  if (newFilter !== 'all') {
-    if (newFilter === 'pending') {
-      filtersPlugin.addCondition(10, 'eq', ['Pending'])
+  saving.value = true
+  try {
+    calculateTotals()
+    
+    if (selectedEntry.value) {
+      // Update existing entry
+      const index = data.value.findIndex(item => item.id === selectedEntry.value.id)
+      if (index > -1) {
+        data.value[index] = { ...newEntry.value, id: selectedEntry.value.id }
+      }
+      showSuccess('Entry updated successfully')
     } else {
-      const type = newFilter === 'income' ? 'Income' : 'Expense'
-      filtersPlugin.addCondition(2, 'eq', [type])
+      // Add new entry
+      const newId = Math.max(...data.value.map(item => item.id), 0) + 1
+      data.value.push({ ...newEntry.value, id: newId })
+      showSuccess('Entry added successfully')
     }
+    
+    entryDialog.value = false
+    selectedEntry.value = null
+  } catch (error) {
+    showError('Failed to save entry')
+  } finally {
+    saving.value = false
   }
-  
-  filtersPlugin.filter()
-})
+}
 
-onMounted(async () => {
-  await loadData()
-  initializeTable()
+const editItem = (item: any) => {
+  selectedEntry.value = item
+  newEntry.value = { ...item }
+  entryDialog.value = true
+}
+
+const confirmDelete = (item: any) => {
+  selectedEntry.value = item
+  deleteDialog.value = true
+}
+
+const deleteItem = async () => {
+  if (!selectedEntry.value) return
+  
+  try {
+    const index = data.value.findIndex(item => item.id === selectedEntry.value.id)
+    if (index > -1) {
+      data.value.splice(index, 1)
+      showSuccess('Entry deleted successfully')
+    }
+    deleteDialog.value = false
+    selectedEntry.value = null
+  } catch (error) {
+    showError('Failed to delete entry')
+  }
+}
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'paid': return 'success'
+    case 'pending': return 'warning'
+    case 'overdue': return 'error'
+    default: return 'primary'
+  }
+}
+
+const exportExcel = () => {
+  try {
+    const ws = XLSX.utils.json_to_sheet(filteredData.value)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Accounting Ledger')
+    XLSX.writeFile(wb, 'accounting-ledger.xlsx')
+    showSuccess('Excel file exported successfully')
+  } catch (error) {
+    showError('Failed to export Excel file')
+  }
+}
+
+// Initialize data on mount
+onMounted(() => {
+  loadData()
 })
 </script>
 
-<style>
-@import 'handsontable/dist/handsontable.full.css';
-
-.handsontable td {
-  font-size: 13px;
+<style scoped>
+.v-data-table {
+  background: white;
 }
-
-.handsontable th {
-  background-color: #f5f5f5;
-  font-weight: bold;
+.text-success {
+  color: rgb(76, 175, 80) !important;
 }
-
-#accounting-table {
-  margin: 20px 0;
+.text-error {
+  color: rgb(244, 67, 54) !important;
 }
 </style>
