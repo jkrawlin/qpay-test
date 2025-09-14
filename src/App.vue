@@ -131,6 +131,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onErrorCaptured } from 'vue'
 import { useOnline } from '@vueuse/core'
+import { useTheme } from 'vuetify'
 import { useAppStore } from '@/stores/app'
 import type { RouteLocationNormalized } from 'vue-router'
 
@@ -143,6 +144,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 // Composables
 const isOnline = useOnline()
 const appStore = useAppStore()
+const theme = useTheme()
 
 // Global error handling
 onErrorCaptured((error, instance, info) => {
@@ -188,8 +190,8 @@ onMounted(() => {
   // Check for app updates
   checkForUpdates()
   
-  // Initialize theme from localStorage
-  initializeTheme()
+  // Initialize theme to light mode only
+  theme.global.name.value = 'qatarLight'
   
   // Set up window resize listener for mobile detection
   window.addEventListener('resize', handleResize)
@@ -204,13 +206,6 @@ const checkForUpdates = () => {
   }
 }
 
-const initializeTheme = () => {
-  const savedTheme = localStorage.getItem('nipon-theme')
-  if (savedTheme) {
-    appStore.setTheme(savedTheme as 'light' | 'dark')
-  }
-}
-
 const handleResize = () => {
   // Disable mobile redirect for now - app should work regardless of screen size
   // if (window.innerWidth < 1024) {
@@ -222,7 +217,7 @@ const handleResize = () => {
 <style scoped>
 /* Main content styling */
 .main-content {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: var(--gradient-surface-light);
   min-height: calc(100vh - 96px);
 }
 
@@ -286,9 +281,9 @@ const handleResize = () => {
 
 /* App bar customizations */
 .v-app-bar {
-  box-shadow: var(--shadow-md) !important;
-  backdrop-filter: blur(10px);
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  background: #8B1538 !important;
+  /* Remove backdrop filter that causes transparency */
 }
 
 .v-app-bar .v-toolbar-title {
@@ -376,29 +371,6 @@ const handleResize = () => {
     min-height: 300px;
     padding: var(--spacing-lg);
   }
-}
-
-/* Dark theme adjustments */
-.v-theme--dark .main-content {
-  background: linear-gradient(135deg, #121212 0%, #1e1e1e 100%);
-}
-
-.v-theme--dark .border-t {
-  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
-}
-
-.v-theme--dark .v-app-bar {
-  background: linear-gradient(135deg, #0D47A1 0%, #1565C0 100%) !important;
-}
-
-.v-theme--dark .v-footer {
-  background: linear-gradient(135deg, #1e1e1e 0%, #121212 100%) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
-}
-
-.v-theme--dark :deep(.v-overlay .v-overlay__content) {
-  background: rgba(30, 30, 30, 0.95);
-  color: white;
 }
 
 /* Performance optimizations */

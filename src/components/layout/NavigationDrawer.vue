@@ -1,18 +1,5 @@
 <template>
   <div class="navigation-drawer enhanced-nav">
-    <!-- Company Logo & Info -->
-    <div class="company-header bg-gradient-primary">
-      <div class="company-logo enhanced-logo">
-        <v-icon size="24" color="white">mdi-office-building</v-icon>
-      </div>
-      <div class="company-info">
-        <div class="company-name">Nipon Payroll Pro</div>
-        <div class="company-subtitle">Qatar Manpower Solutions</div>
-      </div>
-    </div>
-
-    <v-divider />
-
     <!-- Scrollable Navigation Menu -->
     <div class="navigation-content enhanced-scroll">
       <v-list nav class="scrollable-list" density="compact">
@@ -544,69 +531,12 @@ const employeeCount = computed(() => 245) // Mock employee count
   border-right: 1px solid var(--color-border);
 }
 
-.company-header {
-  display: flex;
-  align-items: center;
-  padding: var(--spacing-lg) var(--spacing-md);
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-  color: white;
-  border-radius: 0;
-  flex-shrink: 0;
-  position: relative;
-  overflow: hidden;
-}
-
-.company-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-  opacity: 0.3;
-}
-
-.enhanced-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: var(--border-radius-lg);
-  margin-right: var(--spacing-md);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  position: relative;
-  z-index: 1;
-}
-
-.company-info {
-  flex: 1;
-  position: relative;
-  z-index: 1;
-}
-
-.company-name {
-  font-weight: 700;
-  font-size: 15px;
-  line-height: 1.3;
-  letter-spacing: 0.5px;
-}
-
-.company-subtitle {
-  font-size: 11px;
-  opacity: 0.9;
-  line-height: 1.2;
-  font-weight: 400;
-}
-
 .navigation-content {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: var(--spacing-sm) 0;
+  padding: 8px 0;
+  background: var(--gradient-surface-light);
 }
 
 .enhanced-scroll {
@@ -710,14 +640,17 @@ const employeeCount = computed(() => 245) // Mock employee count
 }
 
 .v-list-item--active {
-  background: linear-gradient(90deg, rgba(var(--color-primary-rgb), 0.12) 0%, rgba(var(--color-primary-rgb), 0.08) 100%) !important;
-  color: var(--color-primary) !important;
+  background: var(--gradient-primary-light) !important;
+  color: #8B1538 !important;
+  font-weight: 600 !important;
+  box-shadow: var(--shadow-sm);
 }
 
 .v-list-item--active .nav-icon,
 .v-list-item--active .nav-sub-icon {
-  color: var(--color-primary) !important;
+  color: #8B1538 !important;
   transform: scale(1.1);
+  text-shadow: 0 1px 2px rgba(139, 21, 56, 0.1);
 }
 
 .enhanced-badge {
@@ -783,18 +716,6 @@ const employeeCount = computed(() => 245) // Mock employee count
 
 /* Responsive adjustments */
 @media (max-width: 960px) {
-  .company-header {
-    padding: var(--spacing-md);
-  }
-  
-  .company-name {
-    font-size: 14px;
-  }
-  
-  .company-subtitle {
-    font-size: 10px;
-  }
-  
   .enhanced-nav-item,
   .enhanced-nav-group {
     min-height: 40px !important;
@@ -814,10 +735,6 @@ const employeeCount = computed(() => 245) // Mock employee count
 
 .v-theme--dark .enhanced-nav {
   border-right-color: #333;
-}
-
-.v-theme--dark .company-header {
-  background: linear-gradient(135deg, #0D47A1 0%, #1565C0 100%);
 }
 
 .v-theme--dark .enhanced-footer {
