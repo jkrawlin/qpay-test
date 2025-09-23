@@ -1,22 +1,25 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly VITE_FIREBASE_API_KEY: string
-  readonly VITE_FIREBASE_AUTH_DOMAIN: string
-  readonly VITE_FIREBASE_PROJECT_ID: string
-  readonly VITE_FIREBASE_STORAGE_BUCKET: string
-  readonly VITE_FIREBASE_MESSAGING_SENDER_ID: string
-  readonly VITE_FIREBASE_APP_ID: string
-  readonly VITE_FIREBASE_MEASUREMENT_ID: string
-  readonly VITE_FIREBASE_VAPID_KEY: string
-  readonly VITE_USE_FIREBASE_EMULATORS: string
-  readonly VITE_ENABLE_DEBUG_LOGGING: string
-  readonly VITE_APP_NAME: string
-  readonly VITE_APP_VERSION: string
-  readonly VITE_APP_DESCRIPTION: string
-  readonly VITE_DEFAULT_LANGUAGE: string
-  readonly VITE_DEFAULT_CURRENCY: string
-  readonly VITE_DEFAULT_TIMEZONE: string
+  /** Feature flag controlling conditional Firebase reintroduction */
+  readonly VITE_ENABLE_FIREBASE?: string
+  // Deprecated Firebase config (phase 1 removed) - keep optional for future reactivation
+  readonly VITE_FIREBASE_API_KEY?: string
+  readonly VITE_FIREBASE_AUTH_DOMAIN?: string
+  readonly VITE_FIREBASE_PROJECT_ID?: string
+  readonly VITE_FIREBASE_STORAGE_BUCKET?: string
+  readonly VITE_FIREBASE_MESSAGING_SENDER_ID?: string
+  readonly VITE_FIREBASE_APP_ID?: string
+  readonly VITE_FIREBASE_MEASUREMENT_ID?: string
+  readonly VITE_FIREBASE_VAPID_KEY?: string
+  readonly VITE_USE_FIREBASE_EMULATORS?: string
+  readonly VITE_ENABLE_DEBUG_LOGGING?: string
+  readonly VITE_APP_NAME?: string
+  readonly VITE_APP_VERSION?: string
+  readonly VITE_APP_DESCRIPTION?: string
+  readonly VITE_DEFAULT_LANGUAGE?: string
+  readonly VITE_DEFAULT_CURRENCY?: string
+  readonly VITE_DEFAULT_TIMEZONE?: string
 }
 
 interface ImportMeta {
@@ -51,13 +54,6 @@ declare global {
   }
 }
 
-// Firebase types extensions
-declare module 'firebase/auth' {
-  interface User {
-    roles?: string[]
-    permissions?: string[]
-    companyId?: string
-  }
-}
+// Firebase auth module augmentation removed for phase 1 (no Firebase runtime)
 
 export {}

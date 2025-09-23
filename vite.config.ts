@@ -72,12 +72,7 @@ export default defineConfig({
         manualChunks: {
           vendor: ['vue', 'vue-router', 'pinia'],
           ui: ['vuetify'],
-          firebase: [
-            'firebase/app',
-            'firebase/auth',
-            'firebase/firestore',
-            'firebase/storage'
-          ],
+          // Removed firebase chunk (Firebase stripped out phase 1)
           charts: ['chart.js', 'vue-chartjs'],
           utils: ['date-fns', 'lodash-es']
         }

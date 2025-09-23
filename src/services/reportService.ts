@@ -1,14 +1,6 @@
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  Timestamp,
-  orderBy,
-  limit
-} from 'firebase/firestore'
-import { db } from '@/firebase/config'
-import { format, startOfMonth, endOfMonth, addMonths, differenceInDays } from 'date-fns'
+// In-memory stub replacing Firestore for phase 1 firebase removal.
+// All data intensive methods now rely on supplied in-memory services or fall back to mock data.
+import { format, startOfMonth, endOfMonth } from 'date-fns'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import * as XLSX from 'xlsx'
@@ -27,18 +19,18 @@ export class ReportService {
     const endDate = endOfMonth(month)
     
     try {
-      const payrollQuery = query(
-        collection(db, 'salary-transactions'),
-        where('paymentDate', '>=', Timestamp.fromDate(startDate)),
-        where('paymentDate', '<=', Timestamp.fromDate(endDate)),
-        orderBy('paymentDate', 'desc')
-      )
-      
-      const snapshot = await getDocs(payrollQuery)
-      const payrollData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }))
+      // Attempt to dynamically import payrollService (in-memory now)
+      let payrollData: any[] = []
+      try {
+        const { payrollService } = await import('./payrollService')
+        const all = await payrollService.getSalaryTransactions()
+        payrollData = all.filter(r => {
+          const pd = r.paymentDate || r.createdAt
+            return pd >= startDate && pd <= endDate
+        })
+      } catch (_e) {
+        // fallback: mock below
+      }
       
       // Calculate summary
       const summary = {
@@ -96,41 +88,29 @@ export class ReportService {
   // Employee Cost Analysis
   async generateEmployeeCostAnalysis(): Promise<ReportData> {
     try {
-      const employeesQuery = query(collection(db, 'employees'), where('status', '==', 'active'))
-      const employeesSnapshot = await getDocs(employeesQuery)
-      
-      const costAnalysis = await Promise.all(
-        employeesSnapshot.docs.map(async (doc) => {
-          const employee = { id: doc.id, ...doc.data() }
-          
-          // Get last 12 months of payroll
-          const payrollQuery = query(
-            collection(db, 'salary-transactions'),
-            where('employeeId', '==', employee.id),
-            orderBy('paymentDate', 'desc'),
-            limit(12)
-          )
-          
-          const payrollSnapshot = await getDocs(payrollQuery)
-          const payrollRecords = payrollSnapshot.docs.map(d => d.data())
-          
-          const totalCost = payrollRecords.reduce((sum, record) => {
-            return sum + (record.netPayable || 0) + (record.companyContributions || 0)
-          }, 0)
-          
-          return {
-            employeeId: employee.id,
-            employeeName: employee.name,
-            department: employee.department,
-            position: employee.position,
-            monthlyCost: totalCost / Math.max(payrollRecords.length, 1),
-            annualCost: totalCost,
-            benefitsCost: employee.benefitsCost || 0,
-            overtimeCost: employee.overtimeCost || 0,
-            totalCompensation: totalCost + (employee.benefitsCost || 0)
-          }
-        })
-      )
+      // Without Firestore, return mock analysis or attempt synthetic build from payroll service.
+      const { payrollService } = await import('./payrollService')
+      const salaries = await payrollService.getSalaryTransactions()
+      const grouped: Record<string, any[]> = {}
+      salaries.forEach(s => {
+        (grouped[s.employeeId] = grouped[s.employeeId] || []).push(s)
+      })
+      const costAnalysis = Object.entries(grouped).map(([employeeId, records]) => {
+        const recs = records as any[]
+        const totalCost = recs.reduce((sum, r) => sum + (r.netPayable || 0), 0)
+        const sample = recs[0]
+        return {
+          employeeId,
+          employeeName: sample.employeeName,
+          department: sample.department || 'N/A',
+          position: sample.position || 'N/A',
+          monthlyCost: totalCost / Math.max(recs.length, 1),
+          annualCost: totalCost,
+          benefitsCost: 0,
+          overtimeCost: 0,
+          totalCompensation: totalCost
+        }
+      })
       
       return {
         title: 'Employee Cost Analysis Report',
@@ -149,96 +129,8 @@ export class ReportService {
     futureDate.setDate(futureDate.getDate() + daysAhead)
     
     try {
-      const employeesQuery = query(collection(db, 'employees'), where('status', '==', 'active'))
-      const snapshot = await getDocs(employeesQuery)
-      
-      const expiringDocuments: any[] = []
-      
-      snapshot.docs.forEach(doc => {
-        const employee = { id: doc.id, ...doc.data() } as any
-        
-        // Check Qatar ID
-        if (employee.documents?.qatarId?.expiryDate) {
-          const expiryDate = employee.documents.qatarId.expiryDate.toDate()
-          const daysUntilExpiry = differenceInDays(expiryDate, new Date())
-          
-          if (daysUntilExpiry <= daysAhead && daysUntilExpiry > -30) { // Include expired docs up to 30 days
-            expiringDocuments.push({
-              employeeId: employee.id,
-              employeeName: employee.name,
-              department: employee.department,
-              documentType: 'Qatar ID',
-              documentNumber: employee.documents.qatarId.number,
-              issueDate: employee.documents.qatarId.issueDate?.toDate() || null,
-              expiryDate: expiryDate,
-              daysUntilExpiry,
-              urgency: this.getUrgencyLevel(daysUntilExpiry),
-              status: daysUntilExpiry < 0 ? 'Expired' : 'Expiring'
-            })
-          }
-        }
-        
-        // Check Passport
-        if (employee.documents?.passport?.expiryDate) {
-          const expiryDate = employee.documents.passport.expiryDate.toDate()
-          const daysUntilExpiry = differenceInDays(expiryDate, new Date())
-          
-          if (daysUntilExpiry <= daysAhead && daysUntilExpiry > -30) {
-            expiringDocuments.push({
-              employeeId: employee.id,
-              employeeName: employee.name,
-              department: employee.department,
-              documentType: 'Passport',
-              documentNumber: employee.documents.passport.number,
-              nationality: employee.documents.passport.nationality,
-              issueDate: employee.documents.passport.issueDate?.toDate() || null,
-              expiryDate: expiryDate,
-              daysUntilExpiry,
-              urgency: this.getUrgencyLevel(daysUntilExpiry),
-              status: daysUntilExpiry < 0 ? 'Expired' : 'Expiring'
-            })
-          }
-        }
-        
-        // Check Visa
-        if (employee.documents?.visa?.expiryDate) {
-          const expiryDate = employee.documents.visa.expiryDate.toDate()
-          const daysUntilExpiry = differenceInDays(expiryDate, new Date())
-          
-          if (daysUntilExpiry <= daysAhead && daysUntilExpiry > -30) {
-            expiringDocuments.push({
-              employeeId: employee.id,
-              employeeName: employee.name,
-              department: employee.department,
-              documentType: 'Visa',
-              documentNumber: employee.documents.visa.number,
-              visaType: employee.documents.visa.type,
-              sponsor: employee.documents.visa.sponsor,
-              expiryDate: expiryDate,
-              daysUntilExpiry,
-              urgency: this.getUrgencyLevel(daysUntilExpiry),
-              status: daysUntilExpiry < 0 ? 'Expired' : 'Expiring'
-            })
-          }
-        }
-      })
-      
-      const summary = {
-        totalDocuments: expiringDocuments.length,
-        expiredDocuments: expiringDocuments.filter(d => d.daysUntilExpiry < 0).length,
-        criticalExpiry: expiringDocuments.filter(d => d.urgency === 'Critical').length,
-        highExpiry: expiringDocuments.filter(d => d.urgency === 'High').length,
-        mediumExpiry: expiringDocuments.filter(d => d.urgency === 'Medium').length,
-        byDocumentType: this.groupByDocumentType(expiringDocuments),
-        byDepartment: this.groupByDepartment(expiringDocuments)
-      }
-      
-      return {
-        title: `Document Expiry Report - Next ${daysAhead} Days`,
-        generatedDate: new Date(),
-        data: expiringDocuments.sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry),
-        summary
-      }
+      // Without employee data source, fall back to mock.
+      return this.getMockExpiryReport(daysAhead)
     } catch (error) {
       console.error('Error generating expiry report:', error)
       return this.getMockExpiryReport(daysAhead)
@@ -248,18 +140,7 @@ export class ReportService {
   // Cash Flow Statement
   async generateCashFlowStatement(startDate: Date, endDate: Date): Promise<ReportData> {
     try {
-      const transactionsQuery = query(
-        collection(db, 'transactions'),
-        where('date', '>=', Timestamp.fromDate(startDate)),
-        where('date', '<=', Timestamp.fromDate(endDate)),
-        orderBy('date', 'desc')
-      )
-      
-      const snapshot = await getDocs(transactionsQuery)
-      const transactions = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }))
+      const transactions: any[] = [] // No transaction data source in stub
       
       const cashFlow = {
         income: [] as any[],
@@ -317,16 +198,8 @@ export class ReportService {
   // Customer Payment Tracking
   async generateCustomerPaymentReport(): Promise<ReportData> {
     try {
-      const invoicesQuery = query(
-        collection(db, 'invoices'),
-        orderBy('dueDate', 'asc')
-      )
-      
-      const snapshot = await getDocs(invoicesQuery)
-      const invoices = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }))
+      const { invoiceService } = await import('./invoiceService')
+      const invoices = await invoiceService.getAllInvoices()
       
       const paymentTracking = {
         outstanding: [] as any[],
@@ -338,10 +211,10 @@ export class ReportService {
         customerBreakdown: {} as Record<string, any>
       }
       
-      const today = new Date()
+    // Stub: no dynamic employee data processing
       
       invoices.forEach(invoice => {
-        const dueDate = invoice.dueDate?.toDate()
+        const dueDate = invoice.dueDate
         const customer = invoice.customerName || 'Unknown'
         
         if (!paymentTracking.customerBreakdown[customer]) {
@@ -355,25 +228,22 @@ export class ReportService {
         }
         
         paymentTracking.customerBreakdown[customer].totalInvoices++
-        paymentTracking.customerBreakdown[customer].totalAmount += invoice.amount || 0
+  paymentTracking.customerBreakdown[customer].totalAmount += invoice.totalAmount || 0
         
         if (invoice.status === 'paid') {
           paymentTracking.paid.push(invoice)
-          paymentTracking.totalPaid += invoice.amount || 0
-          paymentTracking.customerBreakdown[customer].paidAmount += invoice.amount || 0
-        } else if (dueDate && dueDate < today) {
-          const daysOverdue = differenceInDays(today, dueDate)
-          const overdueInvoice = {
-            ...invoice,
-            daysOverdue
-          }
+          paymentTracking.totalPaid += invoice.totalAmount || 0
+          paymentTracking.customerBreakdown[customer].paidAmount += invoice.totalAmount || 0
+        } else if (dueDate && dueDate.getTime() < Date.now()) {
+          const daysOverdue = Math.ceil((Date.now() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
+          const overdueInvoice = { ...invoice, daysOverdue }
           paymentTracking.overdue.push(overdueInvoice)
-          paymentTracking.totalOverdue += invoice.amount || 0
-          paymentTracking.customerBreakdown[customer].overdueAmount += invoice.amount || 0
+          paymentTracking.totalOverdue += invoice.totalAmount || 0
+          paymentTracking.customerBreakdown[customer].overdueAmount += invoice.totalAmount || 0
         } else {
           paymentTracking.outstanding.push(invoice)
-          paymentTracking.totalOutstanding += invoice.amount || 0
-          paymentTracking.customerBreakdown[customer].outstandingAmount += invoice.amount || 0
+          paymentTracking.totalOutstanding += invoice.totalAmount || 0
+          paymentTracking.customerBreakdown[customer].outstandingAmount += invoice.totalAmount || 0
         }
       })
       
@@ -392,11 +262,9 @@ export class ReportService {
   // Ministry Compliance Report
   async generateComplianceReport(): Promise<ReportData> {
     try {
-      const employeesQuery = query(collection(db, 'employees'), where('status', '==', 'active'))
-      const snapshot = await getDocs(employeesQuery)
-      
+      // Without employee dataset now that Firestore is removed, use mock counts
       const complianceData = {
-        totalEmployees: snapshot.size,
+        totalEmployees: 0,
         qatariEmployees: 0,
         expatEmployees: 0,
         validDocuments: 0,
@@ -411,100 +279,15 @@ export class ReportService {
         departmentCompliance: {} as Record<string, any>
       }
       
-      const minWage = 1000 // QAR minimum wage
-      const maxWorkingHours = 48 // per week
-      const today = new Date()
-      const thirtyDaysFromNow = addMonths(today, 1)
+    // Removed unused today variable in stub
       
-      snapshot.docs.forEach(doc => {
-        const employee = { id: doc.id, ...doc.data() } as any
-        
-        // Nationality tracking
-        const nationality = employee.nationality || 'Unknown'
-        complianceData.nationalityBreakdown[nationality] = (complianceData.nationalityBreakdown[nationality] || 0) + 1
-        
-        if (employee.nationality === 'Qatari') {
-          complianceData.qatariEmployees++
-        } else {
-          complianceData.expatEmployees++
-        }
-        
-        // Department compliance tracking
-        const dept = employee.department || 'Unknown'
-        if (!complianceData.departmentCompliance[dept]) {
-          complianceData.departmentCompliance[dept] = {
-            employees: 0,
-            violations: 0,
-            documentIssues: 0
-          }
-        }
-        complianceData.departmentCompliance[dept].employees++
-        
-        // Document compliance
-        let hasValidDocuments = true
-        
-        if (employee.documents?.qatarId?.expiryDate) {
-          const expiryDate = employee.documents.qatarId.expiryDate.toDate()
-          if (expiryDate <= today) {
-            complianceData.expiredDocuments++
-            hasValidDocuments = false
-            complianceData.departmentCompliance[dept].documentIssues++
-          } else if (expiryDate <= thirtyDaysFromNow) {
-            complianceData.expiringDocuments++
-          }
-        }
-        
-        if (hasValidDocuments) {
-          complianceData.validDocuments++
-        } else {
-          complianceData.documentCompliance = false
-        }
-        
-        // Wage compliance
-        if (employee.basicSalary && employee.basicSalary < minWage) {
-          complianceData.wageCompliance = false
-          complianceData.departmentCompliance[dept].violations++
-          complianceData.violations.push({
-            type: 'Minimum Wage Violation',
-            employeeId: employee.id,
-            employeeName: employee.name,
-            department: employee.department,
-            details: `Salary (${employee.basicSalary} QAR) below minimum wage (${minWage} QAR)`,
-            severity: 'High'
-          })
-        }
-        
-        // Working hours compliance
-        if (employee.weeklyHours && employee.weeklyHours > maxWorkingHours) {
-          complianceData.workingHoursCompliance = false
-          complianceData.departmentCompliance[dept].violations++
-          complianceData.violations.push({
-            type: 'Working Hours Violation',
-            employeeId: employee.id,
-            employeeName: employee.name,
-            department: employee.department,
-            details: `Weekly hours (${employee.weeklyHours}) exceed maximum (${maxWorkingHours})`,
-            severity: 'Medium'
-          })
-        }
-      })
+      // With no employee loop, all counts remain zero
       
       // Generate recommendations
-      if (complianceData.expiredDocuments > 0) {
-        complianceData.recommendations.push(`Immediate action required: ${complianceData.expiredDocuments} expired documents need renewal`)
-      }
-      if (complianceData.expiringDocuments > 0) {
-        complianceData.recommendations.push(`Schedule renewals for ${complianceData.expiringDocuments} documents expiring within 30 days`)
-      }
-      if (!complianceData.wageCompliance) {
-        complianceData.recommendations.push('Adjust salaries to meet Qatar minimum wage requirements')
-      }
-      if (!complianceData.workingHoursCompliance) {
-        complianceData.recommendations.push('Review and adjust working hours to comply with Qatar labor law')
-      }
+      // No dynamic recommendations in stub
       
       // Calculate overall compliance score
-      const totalChecks = 4 // wage, hours, documents, general
+    const totalChecks = 1 // only general in stub
       let passedChecks = 0
       if (complianceData.wageCompliance) passedChecks++
       if (complianceData.workingHoursCompliance) passedChecks++
@@ -614,27 +397,7 @@ export class ReportService {
     return Object.values(deductions).reduce((sum: number, value: any) => sum + (value || 0), 0)
   }
 
-  private getUrgencyLevel(daysUntilExpiry: number): string {
-    if (daysUntilExpiry < 0) return 'Expired'
-    if (daysUntilExpiry <= 7) return 'Critical'
-    if (daysUntilExpiry <= 30) return 'High'
-    if (daysUntilExpiry <= 60) return 'Medium'
-    return 'Low'
-  }
-
-  private groupByDocumentType(documents: any[]): Record<string, number> {
-    return documents.reduce((acc, doc) => {
-      acc[doc.documentType] = (acc[doc.documentType] || 0) + 1
-      return acc
-    }, {})
-  }
-
-  private groupByDepartment(documents: any[]): Record<string, number> {
-    return documents.reduce((acc, doc) => {
-      acc[doc.department] = (acc[doc.department] || 0) + 1
-      return acc
-    }, {})
-  }
+  // Removed unused helper methods in stub version
 
   // Mock Data Methods (for demonstration when Firebase is not available)
   private getMockPayrollSummary(month: Date): ReportData {

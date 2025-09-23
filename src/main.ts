@@ -12,18 +12,14 @@ import vuetify from './plugins/vuetify'
 // Global Styles
 import './style.css'
 
-// Firebase
-import { initializeFirebase } from './firebase/config'
-
-// Initialize Firebase
-initializeFirebase()
+// Firebase removed (initializeFirebase no-op stub eliminated)
 
 // Create app
 const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
 
-// Initialize auth BEFORE mounting and router usage to ensure company context
+// Initialize local auth store (no remote calls)
 const authStore = useAuthStore()
 await authStore.initializeAuth()
 

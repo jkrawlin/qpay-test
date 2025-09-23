@@ -1,20 +1,10 @@
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy,
-  Timestamp
-} from 'firebase/firestore'
-import { db } from '@/firebase/config'
-import { format, differenceInDays, addDays } from 'date-fns'
+// In-memory stub implementation replacing Firestore for phase 1 (Firebase removed)
+// Data is volatile and will reset on reload. Suitable only for demo / build success.
+import { generateId } from '@/firebase/config'
+import { format } from 'date-fns'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
+import { persistence } from '@/persistence/localStore'
 
 export interface LineItem {
   id?: string
@@ -101,6 +91,43 @@ export interface PaymentRecord {
   createdAt: Date
 }
 
+// Serialized forms for persistence (Date -> ISO string)
+interface SerializedInvoice extends Omit<Invoice, 'issueDate' | 'dueDate' | 'createdAt' | 'updatedAt' | 'emailDate' | 'lineItems'> {
+  issueDate: string
+  dueDate: string
+  createdAt: string
+  updatedAt: string
+  emailDate?: string
+  lineItems: LineItem[]
+}
+interface SerializedPaymentRecord extends Omit<PaymentRecord, 'paymentDate' | 'createdAt'> {
+  paymentDate: string
+  createdAt: string
+}
+
+function serializeInvoice(inv: Invoice): SerializedInvoice {
+  return {
+    ...inv,
+    issueDate: inv.issueDate.toISOString(),
+    dueDate: inv.dueDate.toISOString(),
+    createdAt: inv.createdAt.toISOString(),
+    updatedAt: inv.updatedAt.toISOString(),
+    emailDate: inv.emailDate ? inv.emailDate.toISOString() : undefined
+  }
+}
+function deserializeInvoice(inv: SerializedInvoice): Invoice {
+  return {
+    ...inv,
+    issueDate: new Date(inv.issueDate),
+    dueDate: new Date(inv.dueDate),
+    createdAt: new Date(inv.createdAt),
+    updatedAt: new Date(inv.updatedAt),
+    emailDate: inv.emailDate ? new Date(inv.emailDate) : undefined
+  }
+}
+function serializePaymentRecord(p: PaymentRecord): SerializedPaymentRecord { return { ...p, paymentDate: p.paymentDate.toISOString(), createdAt: p.createdAt.toISOString() } }
+function deserializePaymentRecord(p: SerializedPaymentRecord): PaymentRecord { return { ...p, paymentDate: new Date(p.paymentDate), createdAt: new Date(p.createdAt) } }
+
 export interface InvoiceStatistics {
   totalInvoices: number
   totalAmount: number
@@ -123,9 +150,26 @@ export interface InvoiceStatistics {
 }
 
 export class InvoiceService {
-  private invoicesCollection = collection(db, 'invoices')
-  private paymentsCollection = collection(db, 'payments')
-  private customersCollection = collection(db, 'customers')
+  // In-memory collections
+  private invoices: Invoice[] = []
+  private payments: PaymentRecord[] = []
+  // customers array removed (unused in in-memory stub)
+
+  constructor() {
+    this.hydrate()
+  }
+
+  private hydrate() {
+    const storedInvoices = persistence.get<SerializedInvoice[]>('invoices:data', [])
+    const storedPayments = persistence.get<SerializedPaymentRecord[]>('invoices:payments', [])
+    if (storedInvoices) this.invoices = storedInvoices.map(deserializeInvoice)
+    if (storedPayments) this.payments = storedPayments.map(deserializePaymentRecord)
+  }
+
+  private persist() {
+    persistence.set('invoices:data', this.invoices.map(serializeInvoice))
+    persistence.set('invoices:payments', this.payments.map(serializePaymentRecord))
+  }
 
   // Qatar VAT Configuration
   private readonly QATAR_VAT_RATE = 5 // 5% VAT rate in Qatar
@@ -154,18 +198,18 @@ export class InvoiceService {
       // Validate Qatar compliance
       await this.validateQatarCompliance(calculatedInvoice)
       
-      // Prepare data for Firestore
-      const firestoreData = {
+      const id = generateId()
+      const now = new Date()
+      const toStore: Invoice = {
         ...calculatedInvoice,
-        issueDate: Timestamp.fromDate(calculatedInvoice.issueDate),
-        dueDate: Timestamp.fromDate(calculatedInvoice.dueDate),
-        emailDate: calculatedInvoice.emailDate ? Timestamp.fromDate(calculatedInvoice.emailDate) : null,
-        createdAt: Timestamp.fromDate(new Date()),
-        updatedAt: Timestamp.fromDate(new Date())
+        id,
+        createdAt: now,
+        updatedAt: now,
+        emailDate: calculatedInvoice.emailDate || undefined
       }
-
-      const docRef = await addDoc(this.invoicesCollection, firestoreData)
-      return docRef.id
+      this.invoices.push(toStore)
+      this.persist()
+      return id
     } catch (error) {
       console.error('Error creating invoice:', error)
       throw error
@@ -187,24 +231,11 @@ export class InvoiceService {
         })
       }
       
-      const firestoreData: any = {
-        ...invoiceData,
-        updatedAt: Timestamp.fromDate(new Date())
+      const existing = this.invoices.find(inv => inv.id === id)
+      if (existing) {
+        Object.assign(existing, invoiceData, { updatedAt: new Date() })
+        this.persist()
       }
-
-      // Convert dates to Timestamps
-      if (invoiceData.issueDate) {
-        firestoreData.issueDate = Timestamp.fromDate(invoiceData.issueDate)
-      }
-      if (invoiceData.dueDate) {
-        firestoreData.dueDate = Timestamp.fromDate(invoiceData.dueDate)
-      }
-      if (invoiceData.emailDate) {
-        firestoreData.emailDate = Timestamp.fromDate(invoiceData.emailDate)
-      }
-
-      const docRef = doc(this.invoicesCollection, id)
-      await updateDoc(docRef, firestoreData)
     } catch (error) {
       console.error('Error updating invoice:', error)
       throw error
@@ -213,22 +244,7 @@ export class InvoiceService {
 
   async getInvoice(id: string): Promise<Invoice | null> {
     try {
-      const docRef = doc(this.invoicesCollection, id)
-      const docSnap = await getDoc(docRef)
-      
-      if (docSnap.exists()) {
-        const data = docSnap.data()
-        return {
-          id: docSnap.id,
-          ...data,
-          issueDate: data.issueDate?.toDate(),
-          dueDate: data.dueDate?.toDate(),
-          emailDate: data.emailDate?.toDate(),
-          createdAt: data.createdAt?.toDate(),
-          updatedAt: data.updatedAt?.toDate()
-        } as Invoice
-      }
-      return null
+      return this.invoices.find(inv => inv.id === id) || null
     } catch (error) {
       console.error('Error fetching invoice:', error)
       return null
@@ -237,18 +253,7 @@ export class InvoiceService {
 
   async getAllInvoices(): Promise<Invoice[]> {
     try {
-      const q = query(this.invoicesCollection, orderBy('issueDate', 'desc'))
-      const snapshot = await getDocs(q)
-      
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        issueDate: doc.data().issueDate?.toDate(),
-        dueDate: doc.data().dueDate?.toDate(),
-        emailDate: doc.data().emailDate?.toDate(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate()
-      })) as Invoice[]
+      return [...this.invoices].sort((a, b) => b.issueDate.getTime() - a.issueDate.getTime())
     } catch (error) {
       console.error('Error fetching invoices:', error)
       return this.getMockInvoices()
@@ -262,9 +267,8 @@ export class InvoiceService {
       if (payments.length > 0) {
         throw new Error('Cannot delete invoice with payments. Cancel invoice instead.')
       }
-
-      const docRef = doc(this.invoicesCollection, id)
-      await deleteDoc(docRef)
+      this.invoices = this.invoices.filter(inv => inv.id !== id)
+      this.persist()
     } catch (error) {
       console.error('Error deleting invoice:', error)
       throw error
@@ -371,26 +375,25 @@ export class InvoiceService {
       }
 
       // Record payment
-      const firestoreData = {
+      const id = generateId()
+      const record: PaymentRecord = {
         ...paymentData,
-        paymentDate: Timestamp.fromDate(paymentData.paymentDate),
-        createdAt: Timestamp.fromDate(new Date())
+        id,
+        createdAt: new Date()
       }
-
-      const paymentRef = await addDoc(this.paymentsCollection, firestoreData)
+      this.payments.push(record)
 
       // Update invoice
       const newAmountPaid = invoice.amountPaid + paymentData.amount
       const newAmountDue = invoice.totalAmount - newAmountPaid
       const newStatus = newAmountDue <= 0 ? 'paid' : 'partially-paid'
 
-      await this.updateInvoice(paymentData.invoiceId, {
-        amountPaid: newAmountPaid,
-        amountDue: newAmountDue,
-        status: newStatus
-      })
-
-      return paymentRef.id
+      invoice.amountPaid = newAmountPaid
+      invoice.amountDue = newAmountDue
+      invoice.status = newStatus as Invoice['status']
+      invoice.updatedAt = new Date()
+  this.persist()
+      return id
     } catch (error) {
       console.error('Error recording payment:', error)
       throw error
@@ -399,15 +402,9 @@ export class InvoiceService {
 
   async getInvoicePayments(invoiceId: string): Promise<PaymentRecord[]> {
     try {
-      const q = query(this.paymentsCollection, where('invoiceId', '==', invoiceId), orderBy('paymentDate', 'desc'))
-      const snapshot = await getDocs(q)
-      
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        paymentDate: doc.data().paymentDate?.toDate(),
-        createdAt: doc.data().createdAt?.toDate()
-      })) as PaymentRecord[]
+      return this.payments
+        .filter(p => p.invoiceId === invoiceId)
+        .sort((a, b) => b.paymentDate.getTime() - a.paymentDate.getTime())
     } catch (error) {
       console.error('Error fetching payments:', error)
       return []
@@ -505,14 +502,8 @@ export class InvoiceService {
     const year = new Date().getFullYear()
     
     try {
-      const q = query(
-        this.invoicesCollection, 
-        where('type', '==', type),
-        orderBy('createdAt', 'desc')
-      )
-      const snapshot = await getDocs(q)
-      const sequence = snapshot.size + 1
-      
+      const existing = this.invoices.filter(i => i.type === type)
+      const sequence = existing.length + 1
       return `${prefix}-${year}-${String(sequence).padStart(4, '0')}`
     } catch (error) {
       // Fallback

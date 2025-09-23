@@ -1,16 +1,11 @@
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  getDocs,
-  orderBy,
-  Timestamp 
-} from 'firebase/firestore'
-import { db } from '@/firebase/config'
+// In-memory payroll service stub replacing Firestore implementation
+// Phase 1 removal: all persistence happens in local arrays during session/runtime only.
+// NOTE: This is NOT production-ready persistence.
+
+// Removed firebase/firestore imports.
+
+import { generateId } from '@/firebase/config'
+import { persistence } from '@/persistence/localStore'
 
 interface SalaryTransaction {
   id?: string
@@ -83,54 +78,108 @@ interface AdvancePayment {
   recordedBy: string
 }
 
+// Serialized representations (Dates converted to ISO strings)
+interface SerializedSalary extends Omit<SalaryTransaction, 'createdAt' | 'updatedAt' | 'paymentDate'> {
+  createdAt: string
+  updatedAt: string
+  paymentDate: string | null
+}
+interface SerializedLoan extends Omit<AdvanceLoan, 'createdAt' | 'updatedAt' | 'approvalDate' | 'requestDate' | 'paymentHistory'> {
+  createdAt: string
+  updatedAt: string
+  approvalDate?: string
+  requestDate: string
+  paymentHistory: SerializedPayment[]
+}
+interface SerializedPayment extends Omit<AdvancePayment, 'paymentDate'> {
+  paymentDate: string
+}
+
+function serializeSalary(s: SalaryTransaction): SerializedSalary {
+  return { ...s, createdAt: s.createdAt.toISOString(), updatedAt: s.updatedAt.toISOString(), paymentDate: s.paymentDate ? s.paymentDate.toISOString() : null }
+}
+function deserializeSalary(s: SerializedSalary): SalaryTransaction {
+  return { ...s, createdAt: new Date(s.createdAt), updatedAt: new Date(s.updatedAt), paymentDate: s.paymentDate ? new Date(s.paymentDate) : null }
+}
+function serializeLoan(l: AdvanceLoan): SerializedLoan {
+  return { ...l, createdAt: l.createdAt.toISOString(), updatedAt: l.updatedAt.toISOString(), approvalDate: l.approvalDate ? l.approvalDate.toISOString() : undefined, requestDate: l.requestDate.toISOString(), paymentHistory: l.paymentHistory.map(serializePayment) }
+}
+function deserializeLoan(l: SerializedLoan): AdvanceLoan {
+  return { ...l, createdAt: new Date(l.createdAt), updatedAt: new Date(l.updatedAt), approvalDate: l.approvalDate ? new Date(l.approvalDate) : undefined, requestDate: new Date(l.requestDate), paymentHistory: l.paymentHistory.map(deserializePayment) }
+}
+function serializePayment(p: AdvancePayment): SerializedPayment { return { ...p, paymentDate: p.paymentDate.toISOString() } }
+function deserializePayment(p: SerializedPayment): AdvancePayment { return { ...p, paymentDate: new Date(p.paymentDate) } }
+
 export class PayrollService {
+  // In-memory stores (hydrated from persistence if available)
+  private salaryTransactions: SalaryTransaction[] = []
+  private advanceLoans: AdvanceLoan[] = []
+  private advancePayments: AdvancePayment[] = []
+
+  constructor() {
+    this.hydrate()
+  }
+
+  private hydrate() {
+    const salaries = persistence.get<SerializedSalary[]>('payroll:salaries', [])
+    const loans = persistence.get<SerializedLoan[]>('payroll:loans', [])
+    const payments = persistence.get<SerializedPayment[]>('payroll:advancePayments', [])
+    if (salaries) this.salaryTransactions = salaries.map(deserializeSalary)
+    if (loans) this.advanceLoans = loans.map(deserializeLoan)
+    if (payments) this.advancePayments = payments.map(deserializePayment)
+  }
+
+  private persist() {
+    persistence.set('payroll:salaries', this.salaryTransactions.map(serializeSalary))
+    persistence.set('payroll:loans', this.advanceLoans.map(serializeLoan))
+    persistence.set('payroll:advancePayments', this.advancePayments.map(serializePayment))
+  }
+  
+  // Utility to find salary transaction
+  private findSalary(id: string) {
+    return this.salaryTransactions.find(t => t.id === id)
+  }
+  private findLoan(id: string) {
+    return this.advanceLoans.find(l => l.id === id)
+  }
   
   // Salary Transaction Management
   async createSalaryTransaction(transaction: Partial<SalaryTransaction>): Promise<string> {
-    const docRef = doc(collection(db, 'salary-transactions'))
-    
+    const id = generateId()
     const salaryData: SalaryTransaction = {
-      ...transaction as SalaryTransaction,
-      id: docRef.id,
+      ...(transaction as SalaryTransaction),
+      id,
       grossSalary: this.calculateGrossSalary(transaction),
       netPayable: this.calculateNetPayable(transaction),
-      status: 'pending',
+      paidAmount: transaction.paidAmount || 0,
+      paymentDate: transaction.paymentDate || null,
+      status: transaction.status || 'pending',
       createdAt: new Date(),
       updatedAt: new Date()
     }
-    
-    await setDoc(docRef, salaryData)
-    return docRef.id
+    this.salaryTransactions.push(salaryData)
+    this.persist()
+    return id
   }
 
   async updateSalaryTransaction(id: string, updates: Partial<SalaryTransaction>): Promise<void> {
-    const docRef = doc(db, 'salary-transactions', id)
-    await updateDoc(docRef, {
-      ...updates,
-      updatedAt: new Date()
-    })
+    const existing = this.findSalary(id)
+    if (existing) {
+      Object.assign(existing, updates, { updatedAt: new Date() })
+      if (updates.basicSalary || updates.allowances || updates.deductions) {
+        existing.grossSalary = this.calculateGrossSalary(existing)
+        existing.netPayable = this.calculateNetPayable(existing)
+      }
+      this.persist()
+    }
   }
 
   async getSalaryTransactions(employeeId?: string, month?: string, year?: number): Promise<SalaryTransaction[]> {
-    let q = query(collection(db, 'salary-transactions'), orderBy('createdAt', 'desc'))
-    
-    if (employeeId) {
-      q = query(q, where('employeeId', '==', employeeId))
-    }
-    
-    if (month) {
-      q = query(q, where('month', '==', month))
-    }
-    
-    if (year) {
-      q = query(q, where('year', '==', year))
-    }
-    
-    const snapshot = await getDocs(q)
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as SalaryTransaction))
+    return this.salaryTransactions
+      .filter(t => !employeeId || t.employeeId === employeeId)
+      .filter(t => !month || t.month === month)
+      .filter(t => !year || t.year === year)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
   }
 
   async processSalaryPayment(transactionId: string, paymentData: {
@@ -140,29 +189,24 @@ export class PayrollService {
     bankDetails?: any
     notes?: string
   }): Promise<void> {
-    const docRef = doc(db, 'salary-transactions', transactionId)
-    
-    const status = paymentData.amount >= 0 ? 
-      (paymentData.amount === 0 ? 'pending' : 'paid') : 'partial'
-    
-    await updateDoc(docRef, {
-      paidAmount: paymentData.amount,
-      paymentDate: paymentData.paymentDate,
-      paymentMethod: paymentData.paymentMethod,
-      bankDetails: paymentData.bankDetails,
-      status,
-      notes: paymentData.notes,
-      updatedAt: new Date()
-    })
+    const tx = this.findSalary(transactionId)
+    if (!tx) return
+    tx.paidAmount = paymentData.amount
+    tx.paymentDate = paymentData.paymentDate
+    tx.paymentMethod = paymentData.paymentMethod
+    tx.bankDetails = paymentData.bankDetails
+    tx.status = paymentData.amount === 0 ? 'pending' : (paymentData.amount >= tx.netPayable ? 'paid' : 'partial')
+    tx.notes = paymentData.notes
+    tx.updatedAt = new Date()
+    this.persist()
   }
 
   // Advance Loan Management
   async createAdvanceLoan(loan: Partial<AdvanceLoan>): Promise<string> {
-    const docRef = doc(collection(db, 'advance-loans'))
-    
+    const id = generateId()
     const loanData: AdvanceLoan = {
-      ...loan as AdvanceLoan,
-      id: docRef.id,
+      ...(loan as AdvanceLoan),
+      id,
       balance: loan.amount || 0,
       paidAmount: 0,
       status: 'pending',
@@ -170,30 +214,36 @@ export class PayrollService {
       createdAt: new Date(),
       updatedAt: new Date()
     }
-    
-    await setDoc(docRef, loanData)
-    return docRef.id
+    this.advanceLoans.push(loanData)
+    this.persist()
+    return id
   }
 
   async approveLoan(loanId: string, approvedBy: string, approvalNotes?: string): Promise<void> {
-    const docRef = doc(db, 'advance-loans', loanId)
-    await updateDoc(docRef, {
-      status: 'approved',
-      approvalDate: new Date(),
-      approvedBy,
-      notes: approvalNotes,
-      updatedAt: new Date()
-    })
+    const loan = this.findLoan(loanId)
+    if (loan) {
+      Object.assign(loan, {
+        status: 'approved',
+        approvalDate: new Date(),
+        approvedBy,
+        notes: approvalNotes,
+        updatedAt: new Date()
+      })
+      this.persist()
+    }
   }
 
   async rejectLoan(loanId: string, rejectedBy: string, rejectionReason?: string): Promise<void> {
-    const docRef = doc(db, 'advance-loans', loanId)
-    await updateDoc(docRef, {
-      status: 'rejected',
-      rejectedBy,
-      rejectionReason,
-      updatedAt: new Date()
-    })
+    const loan = this.findLoan(loanId)
+    if (loan) {
+      Object.assign(loan, {
+        status: 'rejected',
+        rejectedBy,
+        rejectionReason,
+        updatedAt: new Date()
+      })
+      this.persist()
+    }
   }
 
   async recordLoanPayment(paymentData: {
@@ -205,23 +255,10 @@ export class PayrollService {
     notes?: string
     recordedBy: string
   }): Promise<void> {
-    // Get current loan data
-    const loanDoc = await getDocs(query(
-      collection(db, 'advance-loans'), 
-      where('id', '==', paymentData.loanId)
-    ))
-    
-    if (loanDoc.empty) {
-      throw new Error('Loan not found')
-    }
-    
-    const loan = loanDoc.docs[0].data() as AdvanceLoan
-    const newPaidAmount = loan.paidAmount + paymentData.amount
-    const newBalance = loan.amount - newPaidAmount
-    
-    // Create payment record
+    const loan = this.findLoan(paymentData.loanId)
+    if (!loan) throw new Error('Loan not found')
     const payment: AdvancePayment = {
-      id: doc(collection(db, 'temp')).id,
+      id: generateId(),
       loanId: paymentData.loanId,
       amount: paymentData.amount,
       paymentDate: paymentData.paymentDate,
@@ -230,46 +267,25 @@ export class PayrollService {
       notes: paymentData.notes,
       recordedBy: paymentData.recordedBy
     }
-    
-    // Update loan
-    const loanRef = doc(db, 'advance-loans', paymentData.loanId)
-    await updateDoc(loanRef, {
-      paidAmount: newPaidAmount,
-      balance: newBalance,
-      status: newBalance <= 0 ? 'completed' : 'active',
-      paymentHistory: [...loan.paymentHistory, payment],
-      updatedAt: new Date()
-    })
+    this.advancePayments.push(payment)
+    loan.paidAmount += payment.amount
+    loan.balance = (loan.amount || 0) - loan.paidAmount
+    loan.paymentHistory.push(payment)
+    loan.status = loan.balance <= 0 ? 'completed' : 'active'
+    loan.updatedAt = new Date()
+    this.persist()
   }
 
   async getAdvanceLoans(employeeId?: string, status?: string): Promise<AdvanceLoan[]> {
-    let q = query(collection(db, 'advance-loans'), orderBy('createdAt', 'desc'))
-    
-    if (employeeId) {
-      q = query(q, where('employeeId', '==', employeeId))
-    }
-    
-    if (status) {
-      q = query(q, where('status', '==', status))
-    }
-    
-    const snapshot = await getDocs(q)
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as AdvanceLoan))
+    return this.advanceLoans
+      .filter(l => !employeeId || l.employeeId === employeeId)
+      .filter(l => !status || l.status === status)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
   }
 
   // Payroll Analytics
   async getPayrollSummary(month: string, year: number): Promise<any> {
-    const q = query(
-      collection(db, 'salary-transactions'),
-      where('month', '==', month),
-      where('year', '==', year)
-    )
-    
-    const snapshot = await getDocs(q)
-    const transactions = snapshot.docs.map(doc => doc.data() as SalaryTransaction)
+    const transactions = await this.getSalaryTransactions(undefined, month, year)
     
     const summary = {
       totalEmployees: transactions.length,
@@ -323,8 +339,7 @@ export class PayrollService {
   }
 
   async getLoanSummary(): Promise<any> {
-    const snapshot = await getDocs(collection(db, 'advance-loans'))
-    const loans = snapshot.docs.map(doc => doc.data() as AdvanceLoan)
+    const loans = [...this.advanceLoans]
     
     const summary = {
       totalLoans: loans.length,
@@ -415,46 +430,39 @@ export class PayrollService {
   // Helper Methods
   private calculateGrossSalary(transaction: Partial<SalaryTransaction>): number {
     const basic = transaction.basicSalary || 0
-    const allowances = transaction.allowances || {}
-    
-    return basic + 
-      (allowances.housing || 0) + 
-      (allowances.transport || 0) + 
-      (allowances.food || 0) + 
-      (allowances.overtime || 0) + 
-      (allowances.other || 0)
+    const allowances: SalaryTransaction['allowances'] = transaction.allowances || {
+      housing: 0,
+      transport: 0,
+      food: 0,
+      overtime: 0,
+      other: 0
+    }
+    return basic + allowances.housing + allowances.transport + allowances.food + allowances.overtime + allowances.other
   }
 
   private calculateNetPayable(transaction: Partial<SalaryTransaction>): number {
     const gross = this.calculateGrossSalary(transaction)
-    const deductions = transaction.deductions || {}
-    
-    return gross - 
-      (deductions.advances || 0) - 
-      (deductions.absences || 0) - 
-      (deductions.latePenalty || 0) - 
-      (deductions.other || 0)
+    const deductions: SalaryTransaction['deductions'] = transaction.deductions || {
+      advances: 0,
+      absences: 0,
+      latePenalty: 0,
+      other: 0
+    }
+    return gross - deductions.advances - deductions.absences - deductions.latePenalty - deductions.other
   }
 
-  private async calculateAdvanceDeduction(employeeId: string, month: string, year: number): Promise<number> {
-    const q = query(
-      collection(db, 'advance-loans'),
-      where('employeeId', '==', employeeId),
-      where('status', 'in', ['approved', 'active']),
-      where('repaymentMethod', '==', 'salary-deduction')
+  private async calculateAdvanceDeduction(employeeId: string, _month: string, _year: number): Promise<number> {
+    const loans = this.advanceLoans.filter(l => 
+      l.employeeId === employeeId && 
+      ['approved', 'active'].includes(l.status) &&
+      l.repaymentMethod === 'salary-deduction'
     )
-    
-    const snapshot = await getDocs(q)
-    let totalDeduction = 0
-    
-    snapshot.docs.forEach(doc => {
-      const loan = doc.data() as AdvanceLoan
+    return loans.reduce((sum, loan) => {
       if (loan.monthlyDeduction && loan.balance > 0) {
-        totalDeduction += Math.min(loan.monthlyDeduction, loan.balance)
+        return sum + Math.min(loan.monthlyDeduction, loan.balance)
       }
-    })
-    
-    return totalDeduction
+      return sum
+    }, 0)
   }
 
   // Export Functions

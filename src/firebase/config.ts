@@ -1,6 +1,11 @@
-// Stub Firebase config removed for phase 1 (Firestore integration stripped out)
-// This file now exports minimal placeholders so existing imports don't break.
+// Phase 1: Firebase fully disabled. This stub preserves previous exports so the rest
+// of the application continues to compile. A feature flag (ENABLE_FIREBASE) will
+// allow controlled reintegration later without widespread refactors.
+import { ENABLE_FIREBASE } from '@/featureFlags'
 
+export const FIREBASE_ENABLED = ENABLE_FIREBASE
+
+// When re‑enabling, replace these nulls with actual initialized SDK instances.
 export const auth: any = null
 export const db: any = null
 export const storage: any = null
@@ -8,7 +13,13 @@ export const functions: any = null
 export const messaging: any = null
 
 export const initializeFirebase = () => {
-  console.log('[Stub] Firebase disabled for phase 1 removal')
+  if (!FIREBASE_ENABLED) {
+    // Guarded log to make it clear in dev builds why Firebase features are inert
+    if (import.meta.env.DEV) console.log('[Stub] Firebase disabled (FIREBASE_ENABLED=false)')
+    return null
+  }
+  // Placeholder path for future actual initialization (kept explicit for clarity)
+  if (import.meta.env.DEV) console.warn('[Flag] FIREBASE_ENABLED=true but initialization code not implemented in Phase 1')
   return null
 }
 
