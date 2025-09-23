@@ -1,13 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { 
-  employeeService, 
-  type Employee,
-  dbUtils
-} from '@/services/database'
-import type { Unsubscribe } from 'firebase/firestore'
-import { where } from 'firebase/firestore'
+import { employeeService, type Employee } from '@/services/database'
+// Firestore removed: using in-memory db; where replaced by local filtering
+type Unsubscribe = () => void
+const where = (..._args: any[]) => []
 
 export const useEmployeeStore = defineStore('employees', () => {
   // State
@@ -47,18 +44,12 @@ export const useEmployeeStore = defineStore('employees', () => {
   }
 
   // Fetch all employees
-  const fetchEmployees = async (companyId?: string) => {
+  const fetchEmployees = async (_companyId?: string) => {
     try {
       setLoading(true)
       clearError()
       
-      const constraints = []
-      if (companyId) {
-        constraints.push(dbUtils.createCompanyFilter(companyId))
-      }
-      constraints.push(dbUtils.orderByCreatedAt)
-      
-      const fetchedEmployees = await employeeService.getAll(constraints)
+      const fetchedEmployees = await employeeService.getAll()
       employees.value = fetchedEmployees
       
       // Split into temporary and permanent
@@ -75,24 +66,12 @@ export const useEmployeeStore = defineStore('employees', () => {
   }
 
   // Set up real-time listeners
-  const setupRealTimeListeners = (companyId?: string) => {
-    const constraints = []
-    if (companyId) {
-      constraints.push(dbUtils.createCompanyFilter(companyId))
-    }
-    constraints.push(dbUtils.orderByCreatedAt)
-
-    // All employees listener
-    allEmployeesUnsubscribe = employeeService.onSnapshot(
-      (docs) => {
-        employees.value = docs
-        // Split into categories
-        temporaryEmployees.value = docs.filter(emp => emp.type === 'temporary')
-        permanentEmployees.value = docs.filter(emp => emp.type === 'permanent')
-      },
-      (err) => setError(err.message),
-      constraints
-    )
+  const setupRealTimeListeners = () => {
+    allEmployeesUnsubscribe = employeeService.onSnapshot((docs) => {
+      employees.value = docs
+      temporaryEmployees.value = docs.filter(emp => emp.type === 'temporary')
+      permanentEmployees.value = docs.filter(emp => emp.type === 'permanent')
+    })
   }
 
   // Clean up listeners
@@ -120,12 +99,7 @@ export const useEmployeeStore = defineStore('employees', () => {
       const id = await employeeService.create(employeeData)
       
       // Optimistically add to local state (will be updated by real-time listener)
-      const newEmployee: Employee = {
-        ...employeeData,
-        id,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
+      const newEmployee: Employee = { ...employeeData, id, createdAt: new Date(), updatedAt: new Date() }
       
       employees.value.unshift(newEmployee)
       
@@ -245,26 +219,8 @@ export const useEmployeeStore = defineStore('employees', () => {
         return localResults
       }
       
-      // If no local results, search in database
-      const constraints = []
-      if (type) {
-        constraints.push(where('type', '==', type))
-      }
-      
-      // Search by employeeId first (most specific)
-      let results = await employeeService.search('employeeId', searchTerm, '>=', constraints)
-      
-      if (results.length === 0) {
-        // Search by firstName
-        results = await employeeService.search('firstName', searchTerm, '>=', constraints)
-      }
-      
-      if (results.length === 0) {
-        // Search by lastName
-        results = await employeeService.search('lastName', searchTerm, '>=', constraints)
-      }
-      
-      return results
+      // In-memory already searched; return [] when no local results
+      return []
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to search employees'
@@ -274,22 +230,13 @@ export const useEmployeeStore = defineStore('employees', () => {
   }
 
   // Get employees by type with pagination
-  const getEmployeesByType = async (
-    type: 'temporary' | 'permanent',
-  pageSize: number = 20
-  ) => {
+  const getEmployeesByType = async (type: 'temporary' | 'permanent', pageSize: number = 20) => {
     try {
       setLoading(true)
       clearError()
-      
-      const constraints = [
-        where('type', '==', type),
-        ...dbUtils.createPaginationQuery(pageSize)
-      ]
-      
-      const result = await employeeService.getPaginated(pageSize, undefined, constraints)
-      return result
-      
+      const all = employees.value.filter(e => e.type === type)
+      const page = all.slice(0, pageSize)
+      return { docs: page, lastDoc: page.length ? { id: page[page.length - 1].id } as any : null }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch employees by type'
       setError(errorMessage)
@@ -317,8 +264,6 @@ export const useEmployeeStore = defineStore('employees', () => {
       return []
     }
   }
-
-  // Initialize store (call this when app starts)
   const initialize = async (companyId?: string) => {
     const auth = useAuthStore()
     // Wait if auth not yet initialized
@@ -331,22 +276,11 @@ export const useEmployeeStore = defineStore('employees', () => {
     }
     const effectiveCompanyId = companyId || auth.user?.companyId || 'dev-company'
     try {
-      await fetchEmployees(effectiveCompanyId)
-      setupRealTimeListeners(effectiveCompanyId)
+  await fetchEmployees(effectiveCompanyId)
+  setupRealTimeListeners()
     } catch (err: any) {
       // If permission denied first time, attempt one delayed retry (in case seeding just occurred)
-      if (String(err?.message).toLowerCase().includes('permission')) {
-        console.warn('Permission denied fetching employees; retrying after 1s...')
-        await new Promise(r => setTimeout(r, 1000))
-        try {
-          await fetchEmployees(effectiveCompanyId)
-          setupRealTimeListeners(effectiveCompanyId)
-        } catch (e2) {
-          console.error('Retry still failed for employees initialize.', e2)
-        }
-      } else {
-        console.error('Employees initialize failed:', err)
-      }
+      console.error('Employees initialize failed:', err)
     }
   }
 

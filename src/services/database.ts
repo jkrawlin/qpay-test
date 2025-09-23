@@ -1,29 +1,12 @@
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
-  limit,
-  startAfter,
-  onSnapshot,
-  writeBatch,
-  serverTimestamp,
-  increment,
-  arrayUnion,
-  arrayRemove,
-  type DocumentData,
-  type QueryConstraint,
-  type Unsubscribe,
-  type DocumentSnapshot,
-  type QuerySnapshot
-} from 'firebase/firestore'
-import { db, COLLECTIONS, formatFirebaseError } from '@/firebase/config'
+// Firestore removed: this module now provides an in-memory stub implementation
+// preserving the asynchronous API shape used throughout the app so that we can
+// progressively reintroduce Firestore collection by collection in later phases.
+import { COLLECTIONS, generateId } from '@/firebase/config'
+
+// Minimal placeholder types to satisfy existing signatures
+export type QueryConstraint = any
+export type Unsubscribe = () => void
+export type DocumentSnapshot = any
 
 // Base interface for all documents
 export interface BaseDocument {
@@ -44,249 +27,100 @@ export class DatabaseService<T extends BaseDocument> {
   }
 
   // Get collection reference
-  private getCollection() {
-    return collection(db, this.collectionName)
-  }
+  // In-memory storage map per collection
+  private static memoryDB: Record<string, Record<string, any>> = {}
 
-  // Get document reference
-  private getDocRef(id: string) {
-    return doc(db, this.collectionName, id)
+  private getCollectionStore() {
+    if (!DatabaseService.memoryDB[this.collectionName]) {
+      DatabaseService.memoryDB[this.collectionName] = {}
+    }
+    return DatabaseService.memoryDB[this.collectionName]
   }
 
   // Create a new document
   async create(data: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    try {
-      const docData = {
-        ...data,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      }
-      // Firestore rejects fields explicitly set to undefined. Strip them out.
-      const sanitized = Object.fromEntries(
-        Object.entries(docData).filter(([, value]) => value !== undefined)
-      )
-
-      const docRef = await addDoc(this.getCollection(), sanitized)
-      return docRef.id
-    } catch (error) {
-      throw new Error(formatFirebaseError(error))
-    }
+    const id = generateId()
+    const now = new Date().toISOString()
+    const store = this.getCollectionStore()
+    // Strip undefined values
+    const sanitized: any = {}
+    Object.entries(data).forEach(([k, v]) => {
+      if (v !== undefined) sanitized[k] = v
+    })
+    store[id] = { id, ...sanitized, createdAt: now, updatedAt: now }
+    return id
   }
 
   // Get a document by ID
   async getById(id: string): Promise<T | null> {
-    try {
-      const docRef = this.getDocRef(id)
-      const docSnap = await getDoc(docRef)
-      
-      if (docSnap.exists()) {
-        return {
-          id: docSnap.id,
-          ...docSnap.data()
-        } as T
-      }
-      
-      return null
-    } catch (error) {
-      throw new Error(formatFirebaseError(error))
-    }
+    const store = this.getCollectionStore()
+    return store[id] ? { ...store[id] } as T : null
   }
 
   // Get all documents with optional constraints
-  async getAll(constraints: QueryConstraint[] = []): Promise<T[]> {
-    try {
-      const q = query(this.getCollection(), ...constraints)
-      const querySnapshot = await getDocs(q)
-      
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as T[]
-    } catch (error) {
-      throw new Error(formatFirebaseError(error))
-    }
+  async getAll(_constraints: QueryConstraint[] = []): Promise<T[]> {
+    const store = this.getCollectionStore()
+    return Object.values(store).map(v => ({ ...v })) as T[]
   }
 
   // Update a document
   async update(id: string, data: Partial<Omit<T, 'id' | 'createdAt'>>): Promise<void> {
-    try {
-      const docRef = this.getDocRef(id)
-      const updateData = {
-        ...data,
-        updatedAt: serverTimestamp()
-      }
-      
-      await updateDoc(docRef, updateData)
-    } catch (error) {
-      throw new Error(formatFirebaseError(error))
-    }
+    const store = this.getCollectionStore()
+    if (!store[id]) throw new Error('Document not found')
+    const sanitized: any = {}
+    Object.entries(data).forEach(([k, v]) => {
+      if (v !== undefined) sanitized[k] = v
+    })
+    store[id] = { ...store[id], ...sanitized, updatedAt: new Date().toISOString() }
   }
 
   // Delete a document
   async delete(id: string): Promise<void> {
-    try {
-      const docRef = this.getDocRef(id)
-      await deleteDoc(docRef)
-    } catch (error) {
-      throw new Error(formatFirebaseError(error))
-    }
+    const store = this.getCollectionStore()
+    delete store[id]
   }
 
   // Get documents with pagination
-  async getPaginated(
-    pageSize: number = 20,
-    lastDoc?: DocumentSnapshot,
-    constraints: QueryConstraint[] = []
-  ): Promise<{ docs: T[]; lastDoc: DocumentSnapshot | null }> {
-    try {
-      const queryConstraints = [...constraints, limit(pageSize)]
-      
-      if (lastDoc) {
-        queryConstraints.push(startAfter(lastDoc))
-      }
-      
-      const q = query(this.getCollection(), ...queryConstraints)
-      const querySnapshot = await getDocs(q)
-      
-      const docs = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as T[]
-      
-      const newLastDoc = querySnapshot.docs[querySnapshot.docs.length - 1] || null
-      
-      return { docs, lastDoc: newLastDoc }
-    } catch (error) {
-      throw new Error(formatFirebaseError(error))
-    }
+  async getPaginated(pageSize: number = 20, lastDoc?: DocumentSnapshot): Promise<{ docs: T[]; lastDoc: DocumentSnapshot | null }> {
+    const all = await this.getAll()
+    const startIndex = lastDoc ? all.findIndex(d => d.id === lastDoc.id) + 1 : 0
+    const page = all.slice(startIndex, startIndex + pageSize)
+    const newLast = page.length ? { id: page[page.length - 1].id } : null
+    return { docs: page, lastDoc: newLast }
   }
 
   // Real-time listener for documents
-  onSnapshot(
-    callback: (docs: T[]) => void,
-    errorCallback?: (error: Error) => void,
-    constraints: QueryConstraint[] = []
-  ): Unsubscribe {
-    const q = query(this.getCollection(), ...constraints)
-    
-    return onSnapshot(
-      q,
-      (querySnapshot) => {
-        const docs = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as T[]
-        callback(docs)
-      },
-      (error) => {
-        const formattedError = new Error(formatFirebaseError(error))
-        if (errorCallback) {
-          errorCallback(formattedError)
-        } else {
-          console.error('Firestore snapshot error:', formattedError)
-        }
-      }
-    )
+  onSnapshot(callback: (docs: T[]) => void): Unsubscribe {
+    // Immediately invoke with current state; return no-op unsubscribe.
+    this.getAll().then(callback)
+    return () => {}
   }
 
   // Real-time listener for a single document
-  onDocSnapshot(
-    id: string,
-    callback: (doc: T | null) => void,
-    errorCallback?: (error: Error) => void
-  ): Unsubscribe {
-    const docRef = this.getDocRef(id)
-    
-    return onSnapshot(
-      docRef,
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const doc = {
-            id: docSnap.id,
-            ...docSnap.data()
-          } as T
-          callback(doc)
-        } else {
-          callback(null)
-        }
-      },
-      (error) => {
-        const formattedError = new Error(formatFirebaseError(error))
-        if (errorCallback) {
-          errorCallback(formattedError)
-        } else {
-          console.error('Firestore document snapshot error:', formattedError)
-        }
-      }
-    )
+  onDocSnapshot(id: string, callback: (doc: T | null) => void): Unsubscribe {
+    this.getById(id).then(callback)
+    return () => {}
   }
 
   // Batch operations
-  async batchWrite(operations: Array<{
-    type: 'create' | 'update' | 'delete'
-    id?: string
-    data?: any
-  }>): Promise<void> {
-    try {
-      const batch = writeBatch(db)
-      
-      for (const operation of operations) {
-        switch (operation.type) {
-          case 'create':
-            const createRef = doc(this.getCollection())
-            batch.set(createRef, {
-              ...operation.data,
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp()
-            })
-            break
-            
-          case 'update':
-            if (!operation.id) throw new Error('ID required for update operation')
-            const updateRef = this.getDocRef(operation.id)
-            batch.update(updateRef, {
-              ...operation.data,
-              updatedAt: serverTimestamp()
-            })
-            break
-            
-          case 'delete':
-            if (!operation.id) throw new Error('ID required for delete operation')
-            const deleteRef = this.getDocRef(operation.id)
-            batch.delete(deleteRef)
-            break
-        }
-      }
-      
-      await batch.commit()
-    } catch (error) {
-      throw new Error(formatFirebaseError(error))
+  async batchWrite(operations: Array<{ type: 'create' | 'update' | 'delete'; id?: string; data?: any }>): Promise<void> {
+    for (const op of operations) {
+      if (op.type === 'create') await this.create(op.data)
+      if (op.type === 'update' && op.id) await this.update(op.id, op.data)
+      if (op.type === 'delete' && op.id) await this.delete(op.id)
     }
   }
 
   // Search documents (requires composite indexes for complex queries)
-  async search(
-    field: string,
-    value: any,
-    operator: '==' | '!=' | '<' | '<=' | '>' | '>=' | 'array-contains' | 'in' | 'array-contains-any' | 'not-in' = '==',
-    additionalConstraints: QueryConstraint[] = []
-  ): Promise<T[]> {
-    try {
-      const constraints = [where(field, operator, value), ...additionalConstraints]
-      return await this.getAll(constraints)
-    } catch (error) {
-      throw new Error(formatFirebaseError(error))
-    }
+  async search(field: string, value: any): Promise<T[]> {
+    const all = await this.getAll()
+    return all.filter((doc: any) => doc[field] === value)
   }
 
   // Count documents (approximate for large collections)
-  async count(constraints: QueryConstraint[] = []): Promise<number> {
-    try {
-      const docs = await this.getAll(constraints)
-      return docs.length
-    } catch (error) {
-      throw new Error(formatFirebaseError(error))
-    }
+  async count(): Promise<number> {
+    const docs = await this.getAll()
+    return docs.length
   }
 }
 
@@ -399,37 +233,15 @@ export interface Notification extends BaseDocument {
 
 // Utility functions for common database operations
 export const dbUtils = {
-  // Create a compound query for text search (limited functionality)
-  createTextSearchQuery: (field: string, searchTerm: string) => {
-    const end = searchTerm.replace(/.$/, c => String.fromCharCode(c.charCodeAt(0) + 1))
-    return [
-      where(field, '>=', searchTerm),
-      where(field, '<', end)
-    ]
-  },
-
-  // Create pagination query
-  createPaginationQuery: (pageSize: number, orderField: string = 'createdAt') => [
-    orderBy(orderField, 'desc'),
-    limit(pageSize)
-  ],
-
-  // Create date range query
-  createDateRangeQuery: (field: string, startDate: Date, endDate: Date) => [
-    where(field, '>=', startDate),
-    where(field, '<=', endDate)
-  ],
-
-  // Create company filter
-  createCompanyFilter: (companyId: string) => where('companyId', '==', companyId),
-
-  // Create user filter
-  createUserFilter: (userId: string) => where('createdBy', '==', userId),
-
-  // Common ordering
-  orderByCreatedAt: orderBy('createdAt', 'desc'),
-  orderByUpdatedAt: orderBy('updatedAt', 'desc'),
-  orderByName: orderBy('name', 'asc')
+  // Placeholder utilities retained for compatibility; filtering done client side now.
+  createTextSearchQuery: (_field: string, _searchTerm: string) => [],
+  createPaginationQuery: (_pageSize: number, _orderField: string = 'createdAt') => [],
+  createDateRangeQuery: (_field: string, _startDate: Date, _endDate: Date) => [],
+  createCompanyFilter: (_companyId: string) => [],
+  createUserFilter: (_userId: string) => [],
+  orderByCreatedAt: [],
+  orderByUpdatedAt: [],
+  orderByName: []
 }
 
 export default DatabaseService
