@@ -13,7 +13,6 @@ const EmployeeEdit = () => import('@/views/employees/EmployeeEdit.vue')
 const DocumentManagement = () => import('@/views/employees/DocumentManagement.vue')
 
 // Payroll & Transactions
-const PayrollDashboard = () => import('@/views/payroll/PayrollDashboard.vue')
 const SalaryManagement = () => import('@/views/payroll/SalaryManagement.vue')
 const AdvanceLoans = () => import('@/views/payroll/AdvanceLoans.vue')
 const TransactionHistory = () => import('@/views/payroll/TransactionHistory.vue')
@@ -29,14 +28,13 @@ const AccountsDashboard = () => import('@/views/accounts/AccountsDashboard.vue')
 const CashFlowManagement = () => import('@/views/accounts/CashFlowManagement.vue')
 const ExpenseTracking = () => import('@/views/accounts/ExpenseTracking.vue')
 const FinancialReports = () => import('@/views/accounts/FinancialReports.vue')
-const BankReconciliation = () => import('@/views/accounts/BankReconciliation.vue')
+const GeneralLedger = () => import('@/views/accounts/GeneralLedger.vue')
 
 // Customer Management
 const CustomerList = () => import('@/views/customers/CustomerList.vue')
 const CustomerDetail = () => import('@/views/customers/CustomerDetail.vue')
 const CustomerCreate = () => import('@/views/customers/CustomerCreate.vue')
 const ContractManagement = () => import('@/views/customers/ContractManagement.vue')
-const ClientPortal = () => import('@/views/customers/ClientPortal.vue')
 
 // Receipts & Invoicing
 const ReceiptDashboard = () => import('@/views/receipts/ReceiptDashboard.vue')
@@ -64,10 +62,16 @@ const EmployeeProfile = () => import('@/views/employee-portal/EmployeeProfile.vu
 const EmployeePayslips = () => import('@/views/employee-portal/EmployeePayslips.vue')
 const EmployeeDocuments = () => import('@/views/employee-portal/EmployeeDocuments.vue')
 
+// Testing Components
+const DatabaseTest = () => import('@/views/test/DatabaseTest.vue')
+
 // Error and Utility Pages
 const NotFound = () => import('@/views/error/NotFound.vue')
 const Unauthorized = () => import('@/views/error/Unauthorized.vue')
 const ServerError = () => import('@/views/error/ServerError.vue')
+
+// Super Login
+const SuperLogin = () => import('@/views/auth/SuperLogin.vue')
 
 const routes: RouteRecordRaw[] = [
   // Main Application Routes
@@ -133,9 +137,7 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: '',
-        name: 'PayrollDashboard',
-        component: PayrollDashboard,
-        meta: { title: 'Payroll Dashboard - Nipon Payroll Pro' }
+        redirect: '/payroll/salaries'
       },
       {
         path: 'salaries',
@@ -220,11 +222,11 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Financial Reports - Nipon Payroll Pro' }
       },
       {
-        path: 'bank-reconciliation',
-        name: 'BankReconciliation',
-        component: BankReconciliation,
-        meta: { title: 'Bank Reconciliation - Nipon Payroll Pro' }
-      }
+        path: 'ledger',
+        name: 'GeneralLedger',
+        component: GeneralLedger,
+        meta: { title: 'General Ledger - Nipon Payroll Pro' }
+      },
     ]
   },
 
@@ -256,12 +258,6 @@ const routes: RouteRecordRaw[] = [
         name: 'ContractManagement',
         component: ContractManagement,
         meta: { title: 'Contract Management - Nipon Payroll Pro' }
-      },
-      {
-        path: 'portal',
-        name: 'ClientPortal',
-        component: ClientPortal,
-        meta: { title: 'Client Portal - Nipon Payroll Pro' }
       }
     ]
   },
@@ -406,6 +402,14 @@ const routes: RouteRecordRaw[] = [
     ]
   },
 
+  // Testing & Development
+  {
+    path: '/test/database',
+    name: 'DatabaseTest',
+    component: DatabaseTest,
+    meta: { title: 'Database Test - Nipon Payroll Pro' }
+  },
+
   // Error Pages
   {
     path: '/unauthorized',
@@ -424,6 +428,12 @@ const routes: RouteRecordRaw[] = [
     name: 'NotFound',
     component: NotFound,
     meta: { title: 'Page Not Found - Nipon Payroll Pro' }
+  },
+  {
+    path: '/super-login',
+    name: 'SuperLogin',
+    component: SuperLogin,
+    meta: { title: 'Super Login - Nipon Payroll Pro' }
   }
 ]
 

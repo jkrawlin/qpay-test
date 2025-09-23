@@ -125,6 +125,8 @@
           </v-btn>
         </template>
       </v-snackbar>
+      <!-- Global Toaster -->
+      <GlobalToaster />
   </v-app>
 </template>
 
@@ -140,6 +142,7 @@ import NavigationDrawer from '@/components/layout/NavigationDrawer.vue'
 import NotificationMenu from '@/components/layout/NotificationMenu.vue'
 import UserMenu from '@/components/layout/UserMenu.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import GlobalToaster from '@/components/common/GlobalToaster.vue'
 
 // Composables
 const isOnline = useOnline()
@@ -191,7 +194,10 @@ onMounted(() => {
   checkForUpdates()
   
   // Initialize theme to light mode only
-  theme.global.name.value = 'qatarLight'
+  // Ensure we point to existing theme key
+  if (theme?.global?.name) {
+    theme.global.name.value = 'qatar'
+  }
   
   // Set up window resize listener for mobile detection
   window.addEventListener('resize', handleResize)

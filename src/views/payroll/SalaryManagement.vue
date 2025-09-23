@@ -13,13 +13,14 @@
               Manage employee salaries, raises, and compensation structures
             </p>
           </div>
-          <div class="d-flex gap-3">
+          <div class="d-flex gap-3 align-center">
             <v-btn
-              color="success"
+              color="#8B1538"
               size="large"
               elevation="2"
               @click="openSalaryAdjustmentDialog"
               class="enhanced-btn"
+              variant="elevated"
             >
               <template #prepend>
                 <v-icon>mdi-trending-up</v-icon>
@@ -28,7 +29,7 @@
             </v-btn>
             <v-btn
               variant="outlined"
-              color="primary"
+              color="#8B1538"
               size="large"
               @click="exportSalaryData"
               class="enhanced-btn"
@@ -44,109 +45,68 @@
     </div>
 
     <v-container fluid class="pa-spacing-lg">
-      <!-- Summary Cards -->
-      <v-row class="mb-spacing-lg">
-        <v-col cols="12" md="3" v-for="card in salaryCards" :key="card.title">
-          <v-card 
-            class="stats-card"
-            :class="`stats-${card.color}`"
-            elevation="4"
-          >
-            <v-card-text class="pa-spacing-lg">
-              <div class="d-flex justify-space-between align-center">
-                <div>
-                  <p class="text-subtitle-2 mb-2 opacity-90">{{ card.title }}</p>
-                  <h2 class="text-h4 font-weight-bold mb-2">{{ card.value }}</h2>
-                  <div class="d-flex align-center">
-                    <v-icon 
-                      size="small" 
-                      :class="card.trend > 0 ? 'text-white' : 'text-red-lighten-1'"
-                      class="mr-1"
-                    >
-                      {{ card.trend > 0 ? 'mdi-trending-up' : 'mdi-trending-down' }}
-                    </v-icon>
-                    <span class="text-caption opacity-90">
-                      {{ Math.abs(card.trend) }}% from last period
-                    </span>
-                  </div>
-                </div>
-                <v-icon size="48" class="stats-icon">{{ card.icon }}</v-icon>
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-
-      <!-- Filters and Search -->
-      <v-card class="enhanced-card mb-spacing-lg" elevation="2">
-        <v-card-text class="pa-spacing-lg">
-          <v-row align="center">
-            <v-col cols="12" md="3">
-              <v-text-field
-                v-model="searchQuery"
-                label="Search employees..."
-                variant="outlined"
-                density="compact"
-                prepend-inner-icon="mdi-magnify"
-                clearable
-                hide-details
-              />
-            </v-col>
-            <v-col cols="12" md="2">
-              <v-select
-                v-model="selectedDepartment"
-                :items="departments"
-                label="Department"
-                variant="outlined"
-                density="compact"
-                clearable
-                hide-details
-              />
-            </v-col>
-            <v-col cols="12" md="2">
-              <v-select
-                v-model="salaryRange"
-                :items="salaryRanges"
-                label="Salary Range"
-                variant="outlined"
-                density="compact"
-                clearable
-                hide-details
-              />
-            </v-col>
-            <v-col cols="12" md="2">
-              <v-select
-                v-model="selectedGrade"
-                :items="salaryGrades"
-                label="Grade"
-                variant="outlined"
-                density="compact"
-                clearable
-                hide-details
-              />
-            </v-col>
-            <v-col cols="12" md="3">
-              <div class="d-flex gap-2">
+      <!-- Search Filters - Custom Design -->
+      <div class="custom-filter-section mb-spacing-lg">
+        <div class="filter-header">
+          <h3 class="filter-title">
+            <v-icon class="filter-icon">mdi-filter-variant</v-icon>
+            Search & Filter Salaries
+          </h3>
+        </div>
+        <div class="filter-content">
+          <div class="filter-row">
+            <div class="filter-item">
+              <label class="filter-label">Search Employees</label>
+              <div class="custom-input-wrapper">
+                <v-icon class="input-icon">mdi-magnify</v-icon>
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Search by name, employee ID, position..."
+                  class="custom-input"
+                />
                 <v-btn
-                  color="primary"
-                  variant="outlined"
-                  @click="resetFilters"
-                  class="enhanced-btn"
-                >
+                  v-if="searchQuery"
+                  icon="mdi-close"
+                  size="x-small"
+                  variant="text"
+                  class="clear-btn"
+                  @click="searchQuery = ''"
+                />
+              </div>
+            </div>
+            
+            <div class="filter-item">
+              <label class="filter-label">Department</label>
+              <div class="custom-select-wrapper">
+                <select v-model="selectedDepartment" class="custom-select">
+                  <option value="">All Departments</option>
+                  <option value="HR">HR</option>
+                  <option value="Finance">Finance</option>
+                  <option value="IT">IT</option>
+                  <option value="Operations">Operations</option>
+                  <option value="Sales">Sales</option>
+                </select>
+                <v-icon class="select-icon">mdi-chevron-down</v-icon>
+              </div>
+            </div>
+            
+            <div class="filter-item">
+              <label class="filter-label">Actions</label>
+              <div class="filter-action-buttons">
+                <button class="custom-reset-btn" @click="resetFilters">
+                  <v-icon class="btn-icon">mdi-refresh</v-icon>
                   Reset
-                </v-btn>
-                <v-btn
-                  color="success"
-                  @click="bulkSalaryUpdate"
-                  class="enhanced-btn"
-                >
+                </button>
+                <button class="custom-bulk-btn" @click="bulkSalaryUpdate">
+                  <v-icon class="btn-icon">mdi-update</v-icon>
                   Bulk Update
-                </v-btn>
+                </button>
               </div>
-            </v-col>
-          </v-row>
-        </v-card-text>
-      </v-card>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Salary Data Table -->
       <v-card class="enhanced-card" elevation="4">
@@ -214,7 +174,6 @@
           <!-- Position -->
           <template #item.position="{ item }">
             <div class="font-weight-medium">{{ item.position }}</div>
-            <div class="text-caption text-medium-emphasis">{{ item.grade }}</div>
           </template>
 
           <!-- Current Salary -->
@@ -271,7 +230,7 @@
                 icon="mdi-history"
                 size="small"
                 variant="text"
-                color="info"
+                color="primary"
                 @click="viewSalaryHistory(item)"
               />
               <v-menu>
@@ -405,12 +364,7 @@
                 />
               </v-col>
               <v-col cols="12" md="6">
-                <v-select
-                  v-model="editData.grade"
-                  :items="salaryGrades"
-                  label="Salary Grade"
-                  variant="outlined"
-                />
+                <!-- Removed Salary Grade selector -->
               </v-col>
               <v-col cols="12" md="6">
                 <v-text-field
@@ -472,7 +426,7 @@
     <!-- Salary History Dialog -->
     <v-dialog v-model="showHistoryDialog" max-width="900px" scrollable>
       <v-card>
-        <v-card-title class="bg-info text-white">
+        <v-card-title class="bg-primary text-white">
           <v-icon class="mr-2">mdi-history</v-icon>
           Salary History - {{ selectedEmployee?.name }}
         </v-card-title>
@@ -519,8 +473,7 @@ import { ref, computed, onMounted } from 'vue'
 const loading = ref(false)
 const searchQuery = ref('')
 const selectedDepartment = ref(null)
-const salaryRange = ref(null)
-const selectedGrade = ref(null)
+// Removed salaryRange & selectedGrade filters per user request
 const expanded = ref([])
 const showEditDialog = ref(false)
 const showHistoryDialog = ref(false)
@@ -530,46 +483,12 @@ const editData = ref({
   housingAllowance: 0,
   transportAllowance: 0,
   otherAllowances: 0,
-  grade: '',
   effectiveDate: '',
   reason: ''
 })
 
 // Data
-const salaryCards = ref([
-  {
-    title: 'Average Salary',
-    value: 'QAR 4,250',
-    trend: 6.2,
-    color: 'primary',
-    icon: 'mdi-calculator'
-  },
-  {
-    title: 'Total Payroll',
-    value: 'QAR 1.04M',
-    trend: 8.5,
-    color: 'success',
-    icon: 'mdi-cash-multiple'
-  },
-  {
-    title: 'Pending Reviews',
-    value: '23',
-    trend: -15.2,
-    color: 'warning',
-    icon: 'mdi-clock-alert'
-  },
-  {
-    title: 'Grade Changes',
-    value: '8',
-    trend: 12.1,
-    color: 'info',
-    icon: 'mdi-trending-up'
-  }
-])
-
-const departments = ['All', 'Construction', 'Administration', 'HR', 'Finance', 'Safety']
-const salaryRanges = ['All', '< QAR 2,000', 'QAR 2,000-5,000', 'QAR 5,000-10,000', '> QAR 10,000']
-const salaryGrades = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5']
+// Removed legacy salaryCards dashboard metrics and unused filter option arrays (departments, salaryRanges, salaryGrades)
 
 const headers = [
   { title: 'Employee', key: 'employee', sortable: false },
@@ -589,7 +508,6 @@ const employees = ref([
     employeeId: 'NP001',
     department: 'Construction',
     position: 'Senior Engineer',
-    grade: 'Grade 4',
     currentSalary: 8500,
     previousSalary: 8000,
     housingAllowance: 2125,
@@ -612,7 +530,6 @@ const employees = ref([
     employeeId: 'NP002',
     department: 'Administration',
     position: 'HR Manager',
-    grade: 'Grade 5',
     currentSalary: 6500,
     previousSalary: 6200,
     housingAllowance: 1625,
@@ -635,7 +552,6 @@ const employees = ref([
     employeeId: 'NP003',
     department: 'Construction',
     position: 'Worker',
-    grade: 'Grade 1',
     currentSalary: 2200,
     previousSalary: 2100,
     housingAllowance: 550,
@@ -699,10 +615,6 @@ const filteredEmployees = computed(() => {
 
   if (selectedDepartment.value && selectedDepartment.value !== 'All') {
     filtered = filtered.filter(emp => emp.department === selectedDepartment.value)
-  }
-
-  if (selectedGrade.value) {
-    filtered = filtered.filter(emp => emp.grade === selectedGrade.value)
   }
 
   return filtered
@@ -769,8 +681,6 @@ const getPerformanceText = (rating: number): string => {
 const resetFilters = () => {
   searchQuery.value = ''
   selectedDepartment.value = null
-  salaryRange.value = null
-  selectedGrade.value = null
 }
 
 const refreshData = () => {
@@ -787,7 +697,6 @@ const editSalary = (employee: any) => {
     housingAllowance: employee.housingAllowance,
     transportAllowance: employee.transportAllowance,
     otherAllowances: employee.otherAllowances,
-    grade: employee.grade,
     effectiveDate: new Date().toISOString().split('T')[0],
     reason: ''
   }
@@ -904,5 +813,250 @@ onMounted(() => {
   border-radius: var(--border-radius-md);
   text-transform: none;
   font-weight: 500;
+  min-height: 40px;
+  padding: 0 16px;
+}
+
+/* Maroon theme buttons */
+.v-btn[style*="#8B1538"] {
+  background-color: #8B1538 !important;
+  border-color: #8B1538 !important;
+}
+
+.v-btn[style*="#8B1538"]:hover {
+  background-color: #6B0F2A !important;
+  border-color: #6B0F2A !important;
+}
+
+/* Ensure proper button alignment and spacing */
+.enhanced-header .d-flex {
+  align-items: center;
+  gap: 12px;
+}
+
+.enhanced-header .d-flex .v-btn {
+  white-space: nowrap;
+}
+
+/* Filter section button alignment */
+.d-flex.gap-4 {
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 40px;
+  gap: 16px !important;
+}
+
+.d-flex.gap-2 {
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 40px;
+}
+
+/* Salary History Dialog Theme */
+.v-dialog .v-card .v-card-title.bg-primary {
+  background: linear-gradient(135deg, #8B1538 0%, #6B0F2A 100%) !important;
+  color: white !important;
+}
+
+.v-dialog .v-card .v-card-title.bg-primary .v-icon {
+  color: white !important;
+}
+
+/* Custom Filter Section */
+.custom-filter-section {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+
+.filter-header {
+  background: linear-gradient(135deg, #8B1538 0%, #6B0F2A 100%);
+  padding: 16px 24px;
+}
+
+.filter-title {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-icon {
+  color: white;
+}
+
+.filter-content {
+  padding: 24px;
+  background: white;
+}
+
+.filter-row {
+  display: grid;
+  /* Adjusted columns after removing Salary Range & Grade filters */
+  grid-template-columns: 2fr 1fr auto;
+  gap: 24px;
+  align-items: end;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+/* Custom Input Styles */
+.custom-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.custom-input {
+  width: 100%;
+  padding: 12px 16px 12px 48px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: white;
+  color: #374151;
+}
+
+.custom-input:focus {
+  outline: none;
+  border-color: #8B1538;
+  box-shadow: 0 0 0 3px rgba(139, 21, 56, 0.1);
+}
+
+.custom-input::placeholder {
+  color: #9ca3af;
+}
+
+.input-icon {
+  position: absolute;
+  left: 16px;
+  color: #6b7280;
+  z-index: 1;
+}
+
+.clear-btn {
+  position: absolute !important;
+  right: 8px;
+  color: #6b7280 !important;
+}
+
+/* Custom Select Styles */
+.custom-select-wrapper {
+  position: relative;
+}
+
+.custom-select {
+  width: 100%;
+  padding: 12px 40px 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  appearance: none;
+}
+
+.custom-select:focus {
+  outline: none;
+  border-color: #8B1538;
+  box-shadow: 0 0 0 3px rgba(139, 21, 56, 0.1);
+}
+
+.select-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  pointer-events: none;
+}
+
+/* Custom Action Buttons */
+.filter-action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.custom-reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.custom-reset-btn:hover {
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+}
+
+.custom-bulk-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #8B1538 0%, #6B0F2A 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.custom-bulk-btn:hover {
+  background: linear-gradient(135deg, #6B0F2A 0%, #5A0C23 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 21, 56, 0.3);
+}
+
+.btn-icon {
+  color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .filter-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .filter-content {
+    padding: 16px;
+  }
+  
+  .filter-action-buttons {
+    flex-direction: column;
+  }
 }
 </style>

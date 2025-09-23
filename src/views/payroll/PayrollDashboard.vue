@@ -1,82 +1,18 @@
 <template>
   <div class="payroll-dashboard">
-    <!-- Enhanced Header -->
-    <div class="enhanced-header mb-spacing-xl">
-      <v-container fluid class="pa-spacing-lg">
-        <div class="d-flex align-center justify-space-between">
-          <div>
-            <h1 class="text-h4 font-weight-bold mb-2">
-              <v-icon size="32" class="mr-3 text-primary">mdi-cash-multiple</v-icon>
-              Payroll Dashboard
-            </h1>
-            <p class="text-subtitle-1 text-medium-emphasis ma-0">
-              Overview of payroll metrics and activities
-            </p>
-          </div>
-          <div class="d-flex gap-3">
-            <v-btn
-              color="success"
-              size="large"
-              elevation="2"
-              @click="processPayroll"
-              :loading="processing"
-              class="enhanced-btn"
-            >
-              <template #prepend>
-                <v-icon>mdi-play</v-icon>
-              </template>
-              Process Payroll
-            </v-btn>
-            <v-btn
-              variant="outlined"
-              color="primary"
-              size="large"
-              @click="exportPayroll"
-              class="enhanced-btn"
-            >
-              <template #prepend>
-                <v-icon>mdi-download</v-icon>
-              </template>
-              Export Report
-            </v-btn>
-          </div>
-        </div>
-      </v-container>
-    </div>
+    <!-- Unified Hero KPI Section (TemporaryEmployees parity) -->
+    <HeroKpiGroup :kpis="heroKpis" aria-label="Payroll overview KPIs" class="mb-8 payroll-hero-wrapper">
+      <template #title>Payroll Overview</template>
+      <template #subtitle>
+        Real‑time insight into headcount, gross payroll volume and pending actions for this cycle.
+      </template>
+      <template #actions>
+        <v-btn color="success" size="small" prepend-icon="mdi-play" :loading="processing" @click="processPayroll">Process</v-btn>
+        <v-btn variant="outlined" size="small" prepend-icon="mdi-download" @click="exportPayroll">Export</v-btn>
+      </template>
+    </HeroKpiGroup>
 
-    <v-container fluid class="pa-spacing-lg">
-      <!-- Summary Cards -->
-      <v-row class="mb-spacing-lg">
-        <v-col cols="12" md="3" v-for="card in summaryCards" :key="card.title">
-          <v-card 
-            class="stats-card"
-            :class="`stats-${card.color}`"
-            elevation="4"
-          >
-            <v-card-text class="pa-spacing-lg">
-              <div class="d-flex justify-space-between align-center">
-                <div>
-                  <p class="text-subtitle-2 mb-2 opacity-90">{{ card.title }}</p>
-                  <h2 class="text-h4 font-weight-bold mb-2">{{ card.value }}</h2>
-                  <div class="d-flex align-center">
-                    <v-icon 
-                      size="small" 
-                      :class="card.trend > 0 ? 'text-white' : 'text-red-lighten-1'"
-                      class="mr-1"
-                    >
-                      {{ card.trend > 0 ? 'mdi-trending-up' : 'mdi-trending-down' }}
-                    </v-icon>
-                    <span class="text-caption opacity-90">
-                      {{ Math.abs(card.trend) }}% from last month
-                    </span>
-                  </div>
-                </div>
-                <v-icon size="48" class="stats-icon">{{ card.icon }}</v-icon>
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
+    <v-container fluid class="pa-spacing-lg pt-0">
 
       <!-- Charts Row -->
       <v-row class="mb-spacing-lg">
@@ -229,9 +165,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed } from 'vue'
+import { useAccountsStore } from '@/stores/accounts'
 import { useRouter } from 'vue-router'
 import { Chart, registerables } from 'chart.js'
+import HeroKpiGroup from '@/components/common/HeroKpiGroup.vue'
 
 Chart.register(...registerables)
 
@@ -240,6 +178,14 @@ const router = useRouter()
 // State
 const processing = ref(false)
 const chartPeriod = ref('month')
+const accountsStore = useAccountsStore()
+
+// Mock employees for integration (could be replaced with real dataset)
+interface PayrollEmployee { id: string; name: string; gross: number; taxes: number }
+const cycleEmployees: PayrollEmployee[] = [
+  { id: 'EMP-100', name: 'Alice Johnson', gross: 3000, taxes: 600 },
+  { id: 'EMP-101', name: 'Brian Smith', gross: 2800, taxes: 560 }
+]
 
 // Chart refs
 const payrollChart = ref<HTMLCanvasElement>()
@@ -249,36 +195,21 @@ const departmentChart = ref<HTMLCanvasElement>()
 let payrollChartInstance: Chart | null = null
 let departmentChartInstance: Chart | null = null
 
-// Data for dashboard
-const summaryCards = ref([
-  {
-    title: 'Total Employees',
-    value: '245',
-    trend: 5.2,
-    color: 'primary',
-    icon: 'mdi-account-group'
-  },
-  {
-    title: 'Total Payroll',
-    value: 'QAR 458K',
-    trend: 8.1,
-    color: 'success',
-    icon: 'mdi-cash-multiple'
-  },
-  {
-    title: 'Avg Salary',
-    value: 'QAR 1,871',
-    trend: 3.7,
-    color: 'info',
-    icon: 'mdi-calculator'
-  },
-  {
-    title: 'Pending',
-    value: '18',
-    trend: -12.3,
-    color: 'warning',
-    icon: 'mdi-clock-alert'
-  }
+// Metric sources (could be replaced with live API data)
+const totalEmployees = ref(245)
+const totalPayroll = ref('QAR 458K')
+const avgSalary = ref('QAR 1,871')
+const pendingItems = ref(18)
+const trendEmployees = 5.2
+const trendPayroll = 8.1
+const trendAvgSalary = 3.7
+
+// Hero KPI mapping (parity with TemporaryEmployees component usage)
+const heroKpis = computed(() => [
+  { key: 'employees', label: 'Employees', value: totalEmployees.value, foot: `${trendEmployees > 0 ? '+' : ''}${trendEmployees}% vs last`, warn: false },
+  { key: 'gross', label: 'Total Payroll', value: totalPayroll.value, foot: `${trendPayroll > 0 ? '+' : ''}${trendPayroll}% vs last`, warn: false },
+  { key: 'avg', label: 'Avg Salary', value: avgSalary.value, foot: `${trendAvgSalary > 0 ? '+' : ''}${trendAvgSalary}% vs last`, warn: false },
+  { key: 'pending', label: 'Pending Actions', value: pendingItems.value, foot: pendingItems.value ? 'Needs attention' : 'Clear', warn: pendingItems.value > 0 }
 ])
 
 const recentActivities = ref([
@@ -406,8 +337,20 @@ const processPayroll = async () => {
   
   processing.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 3000))
-    alert('Payroll processed successfully!')
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    // Register payroll events in accounts store (staging for posting in Ledger)
+    cycleEmployees.forEach(emp => {
+      accountsStore.registerPayrollEvent({
+        date: new Date().toISOString().slice(0,10),
+        employeeId: emp.id,
+        employeeName: emp.name,
+        type: 'payroll',
+        gross: emp.gross,
+        taxes: emp.taxes,
+        net: emp.gross - emp.taxes
+      })
+    })
+    alert('Payroll processed & events registered to Ledger Employees tab.')
   } catch (error) {
     console.error('Error processing payroll:', error)
     alert('Failed to process payroll. Please try again.')
@@ -573,6 +516,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.payroll-hero-wrapper { margin-top: -6px; }
+/* Adapted hero styling from TemporaryEmployees for consistency */
+/* (HeroKpiGroup already encapsulates its gradient + layout; no overrides needed here) */
+
+/* (If HeroKpiGroup already provides gradient, we rely on it; else we can extend here) */
+
 .payroll-dashboard {
   background-color: var(--background-color);
   min-height: 100vh;

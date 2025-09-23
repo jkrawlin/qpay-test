@@ -1,18 +1,21 @@
-<template>
-  <v-container fluid>
+﻿<template>
+  <v-container fluid class="pa-4">
     <!-- Header Section -->
-    <v-row>
+    <v-row class="mb-4">
       <v-col cols="12">
-        <div class="d-flex justify-space-between align-center mb-6">
+        <div class="d-flex justify-space-between align-center flex-wrap">
           <div>
-            <h1 class="text-h4 font-weight-bold text-primary">Customer Management</h1>
-            <p class="text-subtitle-1 text-medium-emphasis">Manage B2B customers with Qatar compliance tracking</p>
+            <h1 class="text-h4 font-weight-bold mb-2">Customer Management</h1>
+            <p class="text-body-1 text-medium-emphasis">
+              Manage B2B customers with Qatar compliance tracking
+            </p>
           </div>
           <v-btn
             color="primary"
             size="large"
             prepend-icon="mdi-plus"
-            @click="openCustomerDialog()"
+            @click="addCustomer"
+            elevation="2"
           >
             Add Customer
           </v-btn>
@@ -20,192 +23,120 @@
       </v-col>
     </v-row>
 
-    <!-- Filters & Search -->
-    <v-row class="mb-4">
-      <v-col cols="12" md="4">
-        <v-text-field
-          v-model="searchQuery"
-          label="Search customers..."
-          prepend-inner-icon="mdi-magnify"
-          variant="outlined"
-          density="compact"
-          clearable
-        />
-      </v-col>
-      <v-col cols="12" md="3">
-        <v-select
-          v-model="selectedStatus"
-          :items="statusOptions"
-          label="Status"
-          variant="outlined"
-          density="compact"
-          clearable
-        />
-      </v-col>
-      <v-col cols="12" md="3">
-        <v-select
-          v-model="selectedType"
-          :items="typeOptions"
-          label="Customer Type"
-          variant="outlined"
-          density="compact"
-          clearable
-        />
-      </v-col>
-      <v-col cols="12" md="2">
-        <v-btn
-          variant="outlined"
-          block
-          @click="exportCustomers"
-          prepend-icon="mdi-download"
-        >
-          Export
-        </v-btn>
-      </v-col>
-    </v-row>
-
-    <!-- Statistics Cards -->
-    <v-row class="mb-6">
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="stat-card">
-          <v-card-text>
-            <div class="d-flex align-center">
-              <v-icon color="primary" size="40" class="me-3">mdi-account-group</v-icon>
-              <div>
-                <div class="text-h4 font-weight-bold">{{ statistics.totalCustomers }}</div>
-                <div class="text-caption text-medium-emphasis">Total Customers</div>
-              </div>
+    <!-- Search Filters - Redesigned -->
+    <div class="custom-filter-section mb-6">
+      <div class="filter-header">
+        <h3 class="filter-title">
+          <v-icon class="filter-icon">mdi-filter-variant</v-icon>
+          Search & Filter
+        </h3>
+      </div>
+      <div class="filter-content">
+        <div class="filter-row">
+          <div class="filter-item">
+            <label class="filter-label">Search Customers</label>
+            <div class="custom-input-wrapper">
+              <v-icon class="input-icon">mdi-magnify</v-icon>
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Search by company, email, contact..."
+                class="custom-input"
+              />
+              <v-btn
+                v-if="searchQuery"
+                icon="mdi-close"
+                size="x-small"
+                variant="text"
+                class="clear-btn"
+                @click="searchQuery = ''"
+              />
             </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="stat-card">
-          <v-card-text>
-            <div class="d-flex align-center">
-              <v-icon color="success" size="40" class="me-3">mdi-check-circle</v-icon>
-              <div>
-                <div class="text-h4 font-weight-bold">{{ statistics.activeCustomers }}</div>
-                <div class="text-caption text-medium-emphasis">Active Customers</div>
-              </div>
+          </div>
+          
+          <div class="filter-item">
+            <label class="filter-label">Status</label>
+            <div class="custom-select-wrapper">
+              <select v-model="selectedStatus" class="custom-select">
+                <option value="">All Statuses</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Pending">Pending</option>
+                <option value="Suspended">Suspended</option>
+              </select>
+              <v-icon class="select-icon">mdi-chevron-down</v-icon>
             </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="stat-card">
-          <v-card-text>
-            <div class="d-flex align-center">
-              <v-icon color="warning" size="40" class="me-3">mdi-alert-circle</v-icon>
-              <div>
-                <div class="text-h4 font-weight-bold">{{ statistics.expiringLicenses }}</div>
-                <div class="text-caption text-medium-emphasis">Expiring Licenses</div>
-              </div>
+          </div>
+          
+          <div class="filter-item">
+            <label class="filter-label">Business Type</label>
+            <div class="custom-select-wrapper">
+              <select v-model="selectedBusinessType" class="custom-select">
+                <option value="">All Types</option>
+                <option value="Construction">Construction</option>
+                <option value="Technology">Technology</option>
+                <option value="Trading">Trading</option>
+                <option value="Manufacturing">Manufacturing</option>
+                <option value="Services">Services</option>
+              </select>
+              <v-icon class="select-icon">mdi-chevron-down</v-icon>
             </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="stat-card">
-          <v-card-text>
-            <div class="d-flex align-center">
-              <v-icon color="info" size="40" class="me-3">mdi-currency-usd</v-icon>
-              <div>
-                <div class="text-h4 font-weight-bold">{{ formatCurrency(statistics.totalRevenue) }}</div>
-                <div class="text-caption text-medium-emphasis">Total Revenue</div>
-              </div>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+          </div>
+          
+          <div class="filter-item">
+            <label class="filter-label">Actions</label>
+            <button class="custom-reset-btn" @click="resetFilters">
+              <v-icon class="btn-icon">mdi-refresh</v-icon>
+              Reset Filters
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Customer Data Table -->
-    <v-card>
+    <v-card variant="outlined">
       <v-card-title class="d-flex align-center pa-4">
-        <v-icon class="me-2">mdi-account-group</v-icon>
-        Customer Directory
+        <v-icon class="mr-2" style="color: #8B1538;">mdi-account-group</v-icon>
+        <span class="text-h6 font-weight-bold" style="color: #8B1538;">Customer Directory</span>
         <v-spacer />
-        <v-chip
-          :color="getStatusColor('')"
-          variant="tonal"
-          size="small"
-        >
+        <v-chip color="primary" variant="tonal" size="small">
           {{ filteredCustomers.length }} customers
         </v-chip>
       </v-card-title>
+      <v-divider />
 
       <v-data-table
-        :headers="customerHeaders"
+        :headers="headers"
         :items="filteredCustomers"
-        :loading="loading"
         item-value="id"
         class="elevation-0"
+        density="comfortable"
         :items-per-page="25"
       >
         <!-- Company Name -->
-        <template #item.companyName="{ item }">
-          <div class="d-flex align-center">
-            <v-avatar color="primary" size="32" class="me-3">
-              <span class="text-white text-caption">{{ item.companyName.charAt(0) }}</span>
+        <template v-slot:item.company="{ item }">
+          <div class="d-flex align-center cursor-pointer" @click="viewCustomer(item)">
+            <v-avatar color="primary" size="40" class="mr-3">
+              <span class="text-white font-weight-bold">{{ getInitials(item.companyName) }}</span>
             </v-avatar>
             <div>
-              <div class="font-weight-medium">{{ item.companyName }}</div>
+              <div class="text-body-2 font-weight-medium">{{ item.companyName }}</div>
               <div class="text-caption text-medium-emphasis">{{ item.businessType }}</div>
             </div>
           </div>
         </template>
 
         <!-- Contact Info -->
-        <template #item.contactInfo="{ item }">
+        <template v-slot:item.contact="{ item }">
           <div>
-            <div class="d-flex align-center">
-              <v-icon size="14" class="me-1">mdi-email</v-icon>
-              <span class="text-caption">{{ item.email }}</span>
-            </div>
-            <div class="d-flex align-center mt-1">
-              <v-icon size="14" class="me-1">mdi-phone</v-icon>
-              <span class="text-caption">{{ item.phone }}</span>
-            </div>
-          </div>
-        </template>
-
-        <!-- Trade License -->
-        <template #item.tradeLicense="{ item }">
-          <div>
-            <div class="font-weight-medium">{{ item.tradeLicenseNumber }}</div>
-            <div class="text-caption text-medium-emphasis">
-              Expires: {{ formatDate(item.tradeLicenseExpiry) }}
-            </div>
-            <v-chip
-              :color="getLicenseStatusColor(item.tradeLicenseExpiry)"
-              variant="tonal"
-              size="x-small"
-              class="mt-1"
-            >
-              {{ getLicenseStatus(item.tradeLicenseExpiry) }}
-            </v-chip>
-          </div>
-        </template>
-
-        <!-- Contract Status -->
-        <template #item.contractStatus="{ item }">
-          <div>
-            <v-chip
-              :color="getContractStatusColor(item.contractStatus)"
-              variant="tonal"
-              size="small"
-            >
-              {{ item.contractStatus }}
-            </v-chip>
-            <div class="text-caption text-medium-emphasis mt-1">
-              {{ item.contractType }}
-            </div>
+            <div class="text-body-2">{{ item.email }}</div>
+            <div class="text-caption text-medium-emphasis">{{ item.phone }}</div>
           </div>
         </template>
 
         <!-- Status -->
-        <template #item.status="{ item }">
+        <template v-slot:item.status="{ item }">
           <v-chip
             :color="getStatusColor(item.status)"
             variant="tonal"
@@ -216,458 +147,324 @@
         </template>
 
         <!-- Actions -->
-        <template #item.actions="{ item }">
+        <template v-slot:item.actions="{ item }">
           <div class="d-flex gap-1">
             <v-btn
               icon="mdi-eye"
               variant="text"
               size="small"
+              color="primary"
               @click="viewCustomer(item)"
+              title="View Customer"
             />
             <v-btn
               icon="mdi-pencil"
               variant="text"
               size="small"
+              color="primary"
               @click="editCustomer(item)"
+              title="Edit Customer"
             />
             <v-btn
-              icon="mdi-receipt"
+              icon="mdi-file-document"
               variant="text"
               size="small"
-              @click="generateInvoice(item)"
+              color="primary"
+              @click="viewContracts(item)"
+              title="View Contracts"
             />
-            <v-menu>
-              <template #activator="{ props }">
-                <v-btn
-                  icon="mdi-dots-vertical"
-                  variant="text"
-                  size="small"
-                  v-bind="props"
-                />
-              </template>
-              <v-list density="compact">
-                <v-list-item @click="renewLicense(item)">
-                  <v-list-item-title>Renew License</v-list-item-title>
-                </v-list-item>
-                <v-list-item @click="viewContracts(item)">
-                  <v-list-item-title>View Contracts</v-list-item-title>
-                </v-list-item>
-                <v-list-item @click="viewPaymentHistory(item)">
-                  <v-list-item-title>Payment History</v-list-item-title>
-                </v-list-item>
-                <v-divider />
-                <v-list-item
-                  @click="deleteCustomer(item)"
-                  class="text-error"
-                >
-                  <v-list-item-title>Delete</v-list-item-title>
-                </v-list-item>
-              </v-list>
-            </v-menu>
+            <v-btn
+              icon="mdi-file-invoice-outline"
+              variant="text"
+              size="small"
+              color="primary"
+              @click="openInvoiceDialog(item)"
+              title="Create Invoice"
+            />
+            <v-btn
+              icon="mdi-cash-plus"
+              variant="text"
+              size="small"
+              color="primary"
+              @click="openPaymentDialog(item)"
+              title="Record Payment"
+            />
+            <v-btn
+              icon="mdi-delete"
+              variant="text"
+              size="small"
+              color="error"
+              @click="openDeleteDialog(item)"
+              title="Delete Customer"
+            />
           </div>
         </template>
       </v-data-table>
     </v-card>
 
-    <!-- Customer Dialog -->
-    <v-dialog v-model="customerDialog" max-width="800px" persistent>
+    <!-- View Dialog -->
+    <v-dialog v-model="showViewDialog" max-width="640">
       <v-card>
-        <v-card-title class="d-flex align-center pa-4">
-          <v-icon class="me-2">{{ editingCustomer ? 'mdi-pencil' : 'mdi-plus' }}</v-icon>
-          {{ editingCustomer ? 'Edit Customer' : 'Add New Customer' }}
-        </v-card-title>
-
-        <v-card-text>
-          <v-form ref="customerForm" v-model="formValid">
-            <v-row>
-              <!-- Company Information -->
-              <v-col cols="12">
-                <v-card variant="outlined">
-                  <v-card-title class="text-subtitle-1 pa-3">Company Information</v-card-title>
-                  <v-card-text>
-                    <v-row>
-                      <v-col cols="12" md="6">
-                        <v-text-field
-                          v-model="customerForm.companyName"
-                          label="Company Name"
-                          :rules="[rules.required]"
-                          variant="outlined"
-                          density="compact"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-text-field
-                          v-model="customerForm.businessType"
-                          label="Business Type"
-                          :rules="[rules.required]"
-                          variant="outlined"
-                          density="compact"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-text-field
-                          v-model="customerForm.tradeLicenseNumber"
-                          label="Trade License Number"
-                          :rules="[rules.required]"
-                          variant="outlined"
-                          density="compact"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-text-field
-                          v-model="customerForm.tradeLicenseExpiry"
-                          label="Trade License Expiry"
-                          type="date"
-                          :rules="[rules.required]"
-                          variant="outlined"
-                          density="compact"
-                        />
-                      </v-col>
-                    </v-row>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-
-              <!-- Contact Information -->
-              <v-col cols="12">
-                <v-card variant="outlined">
-                  <v-card-title class="text-subtitle-1 pa-3">Contact Information</v-card-title>
-                  <v-card-text>
-                    <v-row>
-                      <v-col cols="12" md="6">
-                        <v-text-field
-                          v-model="customerForm.contactPersonName"
-                          label="Contact Person Name"
-                          :rules="[rules.required]"
-                          variant="outlined"
-                          density="compact"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-text-field
-                          v-model="customerForm.contactPersonPosition"
-                          label="Position"
-                          variant="outlined"
-                          density="compact"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-text-field
-                          v-model="customerForm.email"
-                          label="Email"
-                          type="email"
-                          :rules="[rules.required, rules.email]"
-                          variant="outlined"
-                          density="compact"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-text-field
-                          v-model="customerForm.phone"
-                          label="Phone"
-                          :rules="[rules.required]"
-                          variant="outlined"
-                          density="compact"
-                        />
-                      </v-col>
-                      <v-col cols="12">
-                        <v-textarea
-                          v-model="customerForm.address"
-                          label="Address"
-                          :rules="[rules.required]"
-                          variant="outlined"
-                          density="compact"
-                          rows="2"
-                        />
-                      </v-col>
-                    </v-row>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-
-              <!-- Contract & Billing -->
-              <v-col cols="12">
-                <v-card variant="outlined">
-                  <v-card-title class="text-subtitle-1 pa-3">Contract & Billing</v-card-title>
-                  <v-card-text>
-                    <v-row>
-                      <v-col cols="12" md="6">
-                        <v-select
-                          v-model="customerForm.contractType"
-                          :items="contractTypes"
-                          label="Contract Type"
-                          :rules="[rules.required]"
-                          variant="outlined"
-                          density="compact"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-select
-                          v-model="customerForm.contractStatus"
-                          :items="contractStatuses"
-                          label="Contract Status"
-                          :rules="[rules.required]"
-                          variant="outlined"
-                          density="compact"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-text-field
-                          v-model="customerForm.contractStartDate"
-                          label="Contract Start Date"
-                          type="date"
-                          variant="outlined"
-                          density="compact"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-text-field
-                          v-model="customerForm.contractEndDate"
-                          label="Contract End Date"
-                          type="date"
-                          variant="outlined"
-                          density="compact"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-text-field
-                          v-model="customerForm.creditLimit"
-                          label="Credit Limit (QAR)"
-                          type="number"
-                          variant="outlined"
-                          density="compact"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-text-field
-                          v-model="customerForm.paymentTerms"
-                          label="Payment Terms (Days)"
-                          type="number"
-                          variant="outlined"
-                          density="compact"
-                        />
-                      </v-col>
-                    </v-row>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-
-              <!-- Qatar VAT Information -->
-              <v-col cols="12">
-                <v-card variant="outlined">
-                  <v-card-title class="text-subtitle-1 pa-3">Qatar VAT & Compliance</v-card-title>
-                  <v-card-text>
-                    <v-row>
-                      <v-col cols="12" md="6">
-                        <v-text-field
-                          v-model="customerForm.vatNumber"
-                          label="VAT Registration Number"
-                          variant="outlined"
-                          density="compact"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-select
-                          v-model="customerForm.vatStatus"
-                          :items="vatStatuses"
-                          label="VAT Status"
-                          variant="outlined"
-                          density="compact"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-switch
-                          v-model="customerForm.isQatarResident"
-                          label="Qatar Resident Company"
-                          color="primary"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-switch
-                          v-model="customerForm.requiresCompliance"
-                          label="Requires Ministry Compliance"
-                          color="primary"
-                        />
-                      </v-col>
-                    </v-row>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-            </v-row>
-          </v-form>
-        </v-card-text>
-
-        <v-card-actions class="pa-4">
+        <v-card-title class="d-flex align-center">
+          <v-icon class="mr-2" color="primary">mdi-domain</v-icon>
+          <span class="font-weight-bold">Customer Details</span>
           <v-spacer />
-          <v-btn @click="closeCustomerDialog">Cancel</v-btn>
-          <v-btn
-            color="primary"
-            :loading="saving"
-            :disabled="!formValid"
-            @click="saveCustomer"
-          >
-            {{ editingCustomer ? 'Update' : 'Create' }}
-          </v-btn>
+          <v-btn icon="mdi-close" variant="text" @click="showViewDialog = false" />
+        </v-card-title>
+        <v-divider />
+        <v-card-text v-if="selectedCustomer">
+          <v-row dense>
+            <v-col cols="12" md="6"><strong>Company:</strong> {{ selectedCustomer.companyName }}</v-col>
+            <v-col cols="12" md="6"><strong>Business Type:</strong> {{ selectedCustomer.businessType }}</v-col>
+            <v-col cols="12" md="6"><strong>Email:</strong> {{ selectedCustomer.email }}</v-col>
+            <v-col cols="12" md="6"><strong>Phone:</strong> {{ selectedCustomer.phone }}</v-col>
+            <v-col cols="12" md="6"><strong>Contact Person:</strong> {{ selectedCustomer.contactPerson }}</v-col>
+            <v-col cols="12" md="6"><strong>Status:</strong> {{ selectedCustomer.status }}</v-col>
+            <v-col cols="12" md="6"><strong>Trade Lic #:</strong> {{ selectedCustomer.tradeLicenseNumber }}</v-col>
+            <v-col cols="12" md="6"><strong>License Expiry:</strong> {{ selectedCustomer.tradeLicenseExpiry }}</v-col>
+            <v-col cols="12"><strong>Address:</strong> {{ selectedCustomer.address }}</v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+            <v-btn variant="text" color="primary" @click="showViewDialog = false">Close</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <!-- Snackbar -->
-    <v-snackbar
-      v-model="snackbar.show"
-      :color="snackbar.color"
-      :timeout="3000"
-    >
-      {{ snackbar.message }}
-    </v-snackbar>
+    <!-- Edit Dialog -->
+    <v-dialog v-model="showEditDialog" max-width="680">
+      <v-card :loading="savingEdit">
+        <v-card-title class="d-flex align-center">
+          <v-icon class="mr-2" color="primary">mdi-pencil</v-icon>
+          <span class="font-weight-bold">Edit Customer</span>
+          <v-spacer />
+          <v-btn icon="mdi-close" variant="text" @click="closeEdit" />
+        </v-card-title>
+        <v-divider />
+        <v-form ref="editFormRef" @submit.prevent="saveEdit">
+          <v-card-text v-if="editDraft">
+            <v-row dense>
+              <v-col cols="12" md="6">
+                <v-text-field v-model="editDraft.companyName" label="Company Name" density="comfortable" :rules="[rRequired]" />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-select v-model="editDraft.businessType" :items="businessTypes" label="Business Type" density="comfortable" :rules="[rRequired]" />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field v-model="editDraft.email" label="Email" density="comfortable" type="email" :rules="[rRequired]" />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field v-model="editDraft.phone" label="Phone" density="comfortable" :rules="[rRequired]" />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field v-model="editDraft.contactPerson" label="Contact Person" density="comfortable" :rules="[rRequired]" />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-select v-model="editDraft.status" :items="statusOptions" label="Status" density="comfortable" :rules="[rRequired]" />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field v-model="editDraft.tradeLicenseNumber" label="Trade License #" density="comfortable" />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field v-model="editDraft.tradeLicenseExpiry" label="License Expiry" density="comfortable" type="date" />
+              </v-col>
+              <v-col cols="12">
+                <v-textarea v-model="editDraft.address" label="Address" rows="2" auto-grow density="comfortable" />
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-divider />
+          <v-card-actions>
+            <v-spacer />
+            <v-btn variant="text" @click="closeEdit">Cancel</v-btn>
+            <v-btn color="primary" type="submit" :loading="savingEdit">Save</v-btn>
+          </v-card-actions>
+        </v-form>
+      </v-card>
+    </v-dialog>
+
+    <!-- New Invoice Dialog -->
+    <v-dialog v-model="showInvoiceDialog" max-width="700">
+      <v-card :loading="submittingInvoice">
+        <v-card-title class="d-flex align-center">
+          <v-icon class="mr-2" color="primary">mdi-file-invoice-outline</v-icon>
+          <span class="font-weight-bold">Create Invoice</span>
+          <v-spacer />
+          <v-btn icon="mdi-close" variant="text" @click="closeInvoiceDialog" />
+        </v-card-title>
+        <v-divider />
+        <v-form ref="invoiceFormRef" @submit.prevent="submitInvoice">
+          <v-card-text>
+            <v-row dense>
+              <v-col cols="12" md="6">
+                <v-text-field v-model="invoiceDraft.date" label="Invoice Date" type="date" density="comfortable" :rules="[rRequired]" />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field v-model="invoiceDraft.dueDate" label="Due Date" type="date" density="comfortable" :rules="[rRequired]" />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field v-model.number="invoiceDraft.amount" label="Amount (QAR)" type="number" min="0" density="comfortable" :rules="[rPositive]" />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-select v-model="invoiceDraft.status" :items="invoiceStatusOptions" label="Status" density="comfortable" :rules="[rRequired]" />
+              </v-col>
+              <v-col cols="12">
+                <v-textarea v-model="invoiceDraft.description" label="Description" rows="2" auto-grow density="comfortable" />
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-divider />
+          <v-card-actions>
+            <v-spacer />
+            <v-btn variant="text" @click="closeInvoiceDialog">Cancel</v-btn>
+            <v-btn color="primary" type="submit" :loading="submittingInvoice">Create</v-btn>
+          </v-card-actions>
+        </v-form>
+      </v-card>
+    </v-dialog>
+
+    <!-- Record Payment Dialog -->
+    <v-dialog v-model="showPaymentDialog" max-width="600">
+      <v-card :loading="submittingPayment">
+        <v-card-title class="d-flex align-center">
+          <v-icon class="mr-2" color="primary">mdi-cash-plus</v-icon>
+          <span class="font-weight-bold">Record Payment</span>
+          <v-spacer />
+          <v-btn icon="mdi-close" variant="text" @click="closePaymentDialog" />
+        </v-card-title>
+        <v-divider />
+        <v-form ref="paymentFormRef" @submit.prevent="submitPayment">
+          <v-card-text>
+            <v-row dense>
+              <v-col cols="12" md="6">
+                <v-text-field v-model="paymentDraft.date" label="Payment Date" type="date" density="comfortable" :rules="[rRequired]" />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field v-model.number="paymentDraft.amount" label="Amount (QAR)" type="number" min="0" density="comfortable" :rules="[rPositive]" />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-select v-model="paymentDraft.method" :items="paymentMethods" label="Method" density="comfortable" :rules="[rRequired]" />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field v-model="paymentDraft.reference" label="Reference" density="comfortable" />
+              </v-col>
+              <v-col cols="12">
+                <v-textarea v-model="paymentDraft.notes" label="Notes" rows="2" auto-grow density="comfortable" />
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-divider />
+          <v-card-actions>
+            <v-spacer />
+            <v-btn variant="text" @click="closePaymentDialog">Cancel</v-btn>
+            <v-btn color="primary" type="submit" :loading="submittingPayment">Record</v-btn>
+          </v-card-actions>
+        </v-form>
+      </v-card>
+    </v-dialog>
+
+    <!-- Delete Confirmation Dialog -->
+    <v-dialog v-model="showDeleteDialog" max-width="480">
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-icon class="mr-2" color="error">mdi-alert</v-icon>
+          <span class="font-weight-bold">Delete Customer</span>
+          <v-spacer />
+          <v-btn icon="mdi-close" variant="text" @click="showDeleteDialog = false" />
+        </v-card-title>
+        <v-divider />
+        <v-card-text>
+          <p class="mb-2">Are you sure you want to delete <strong>{{ selectedCustomer?.companyName }}</strong>? This action cannot be undone.</p>
+          <p class="text-caption text-medium-emphasis">(Logical delete placeholder — actual API integration pending)</p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="showDeleteDialog = false">Cancel</v-btn>
+          <v-btn color="error" @click="confirmDelete">Delete</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { format, differenceInDays } from 'date-fns'
+import { ref, computed } from 'vue'
+import { useAccountsStore } from '@/stores/accounts'
+import { useRouter } from 'vue-router'
 
-// Types
-interface Customer {
-  id: string
-  companyName: string
-  businessType: string
-  tradeLicenseNumber: string
-  tradeLicenseExpiry: Date
-  contactPersonName: string
-  contactPersonPosition: string
-  email: string
-  phone: string
-  address: string
-  contractType: string
-  contractStatus: string
-  contractStartDate?: Date
-  contractEndDate?: Date
-  creditLimit: number
-  paymentTerms: number
-  vatNumber?: string
-  vatStatus: string
-  isQatarResident: boolean
-  requiresCompliance: boolean
-  status: string
-  totalRevenue: number
-  createdAt: Date
-  updatedAt: Date
-}
+const router = useRouter()
+const accountsStore = useAccountsStore()
 
-// Reactive data
-const loading = ref(false)
-const customerDialog = ref(false)
-const editingCustomer = ref<Customer | null>(null)
+// Filter state
 const searchQuery = ref('')
-const selectedStatus = ref('')
-const selectedType = ref('')
-const formValid = ref(false)
-const saving = ref(false)
+const selectedStatus = ref(null)
+const selectedBusinessType = ref(null)
 
-const customers = ref<Customer[]>([])
-const statistics = ref({
-  totalCustomers: 0,
-  activeCustomers: 0,
-  expiringLicenses: 0,
-  totalRevenue: 0
-})
-
-const snackbar = ref({
-  show: false,
-  message: '',
-  color: 'success'
-})
-
-// Form data
-const customerForm = ref({
-  companyName: '',
-  businessType: '',
-  tradeLicenseNumber: '',
-  tradeLicenseExpiry: '',
-  contactPersonName: '',
-  contactPersonPosition: '',
-  email: '',
-  phone: '',
-  address: '',
-  contractType: '',
-  contractStatus: '',
-  contractStartDate: '',
-  contractEndDate: '',
-  creditLimit: 0,
-  paymentTerms: 30,
-  vatNumber: '',
-  vatStatus: 'not-registered',
-  isQatarResident: true,
-  requiresCompliance: true
-})
-
-// Options
-const statusOptions = [
-  { value: 'active', title: 'Active' },
-  { value: 'inactive', title: 'Inactive' },
-  { value: 'suspended', title: 'Suspended' }
-]
-
-const typeOptions = [
-  { value: 'corporate', title: 'Corporate' },
-  { value: 'government', title: 'Government' },
-  { value: 'semi-government', title: 'Semi-Government' },
-  { value: 'private', title: 'Private' }
-]
-
-const contractTypes = [
-  'Annual Service Contract',
-  'Project-Based Contract',
-  'Retainer Agreement',
-  'One-Time Service',
-  'Maintenance Contract'
-]
-
-const contractStatuses = [
-  'Active',
-  'Pending',
-  'Expired',
-  'Under Review',
-  'Terminated'
-]
-
-const vatStatuses = [
-  { value: 'registered', title: 'VAT Registered' },
-  { value: 'not-registered', title: 'Not VAT Registered' },
-  { value: 'exempt', title: 'VAT Exempt' }
-]
-
-// Validation rules
-const rules = {
-  required: (value: any) => !!value || 'This field is required',
-  email: (value: string) => {
-    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return pattern.test(value) || 'Invalid email format'
+// Sample data
+const customers = ref([
+  {
+    id: 1,
+    companyName: 'Al Rayyan Construction LLC',
+    businessType: 'Construction',
+    email: 'info@alrayyan.qa',
+    phone: '+974 4444 5555',
+    address: 'Doha, Qatar',
+    contactPerson: 'Ahmed Al Kuwari',
+    tradeLicenseNumber: 'TL-2024-001',
+    tradeLicenseExpiry: '2025-06-15',
+    contractStatus: 'Active',
+    status: 'Active',
+    totalRevenue: 850000
+  },
+  {
+    id: 2,
+    companyName: 'Qatar Tech Solutions WLL',
+    businessType: 'Technology',
+    email: 'contact@qatartech.qa',
+    phone: '+974 4444 6666',
+    address: 'West Bay, Doha',
+    contactPerson: 'Sarah Mohammed',
+    tradeLicenseNumber: 'TL-2024-002',
+    tradeLicenseExpiry: '2024-12-20',
+    contractStatus: 'Active',
+    status: 'Active',
+    totalRevenue: 1200000
+  },
+  {
+    id: 3,
+    companyName: 'Pearl Trading Company',
+    businessType: 'Trading',
+    email: 'admin@pearltrading.qa',
+    phone: '+974 4444 7777',
+    address: 'Industrial Area, Doha',
+    contactPerson: 'Mohamed Hassan',
+    tradeLicenseNumber: 'TL-2024-003',
+    tradeLicenseExpiry: '2024-03-10',
+    contractStatus: 'Expired',
+    status: 'Inactive',
+    totalRevenue: 450000
   }
-}
+])
 
 // Table headers
-const customerHeaders = [
-  { title: 'Company', value: 'companyName', sortable: true },
-  { title: 'Contact Info', value: 'contactInfo', sortable: false },
-  { title: 'Trade License', value: 'tradeLicense', sortable: true },
-  { title: 'Contract', value: 'contractStatus', sortable: true },
-  { title: 'Status', value: 'status', sortable: true },
-  { title: 'Actions', value: 'actions', sortable: false, align: 'center', width: '200px' }
+const headers = [
+  { title: 'Company', key: 'company', sortable: false },
+  { title: 'Contact', key: 'contact', sortable: false },
+  { title: 'Status', key: 'status', sortable: true },
+  { title: 'Actions', key: 'actions', sortable: false }
 ]
 
-// Computed
+// Computed properties
 const filteredCustomers = computed(() => {
   let filtered = customers.value
 
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(customer =>
-      customer.companyName.toLowerCase().includes(query) ||
-      customer.email.toLowerCase().includes(query) ||
-      customer.phone.includes(query) ||
-      customer.tradeLicenseNumber.toLowerCase().includes(query)
+    filtered = filtered.filter(customer => 
+      customer.companyName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      customer.email.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      customer.contactPerson.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      customer.businessType.toLowerCase().includes(searchQuery.value.toLowerCase())
     )
   }
 
@@ -675,293 +472,429 @@ const filteredCustomers = computed(() => {
     filtered = filtered.filter(customer => customer.status === selectedStatus.value)
   }
 
-  if (selectedType.value) {
-    filtered = filtered.filter(customer => customer.businessType === selectedType.value)
+  if (selectedBusinessType.value) {
+    filtered = filtered.filter(customer => customer.businessType === selectedBusinessType.value)
   }
 
   return filtered
 })
 
 // Methods
-const formatDate = (date: Date | string) => {
-  if (!date) return 'N/A'
-  const d = typeof date === 'string' ? new Date(date) : date
-  return format(d, 'dd/MM/yyyy')
+const getInitials = (name: string): string => {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase()
 }
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-QA', {
-    style: 'currency',
-    currency: 'QAR'
-  }).format(amount)
-}
-
-const getStatusColor = (status: string) => {
-  const colors: Record<string, string> = {
-    'active': 'success',
-    'inactive': 'warning',
-    'suspended': 'error'
-  }
-  return colors[status] || 'default'
-}
-
-const getLicenseStatus = (expiryDate: Date | string) => {
-  if (!expiryDate) return 'Unknown'
-  const expiry = typeof expiryDate === 'string' ? new Date(expiryDate) : expiryDate
-  const daysUntilExpiry = differenceInDays(expiry, new Date())
-  
-  if (daysUntilExpiry < 0) return 'Expired'
-  if (daysUntilExpiry <= 30) return 'Expiring Soon'
-  if (daysUntilExpiry <= 90) return 'Due for Renewal'
-  return 'Valid'
-}
-
-const getLicenseStatusColor = (expiryDate: Date | string) => {
-  const status = getLicenseStatus(expiryDate)
-  const colors: Record<string, string> = {
-    'Expired': 'error',
-    'Expiring Soon': 'warning',
-    'Due for Renewal': 'info',
-    'Valid': 'success'
-  }
-  return colors[status] || 'default'
-}
-
-const getContractStatusColor = (status: string) => {
+const getStatusColor = (status: string): string => {
   const colors: Record<string, string> = {
     'Active': 'success',
+    'Inactive': 'error',
     'Pending': 'warning',
-    'Expired': 'error',
-    'Under Review': 'info',
-    'Terminated': 'error'
+    'Suspended': 'error'
   }
-  return colors[status] || 'default'
+  return colors[status] || 'grey'
 }
 
-const openCustomerDialog = (customer?: Customer) => {
-  if (customer) {
-    editingCustomer.value = customer
-    Object.assign(customerForm.value, {
-      ...customer,
-      tradeLicenseExpiry: customer.tradeLicenseExpiry ? format(customer.tradeLicenseExpiry, 'yyyy-MM-dd') : '',
-      contractStartDate: customer.contractStartDate ? format(customer.contractStartDate, 'yyyy-MM-dd') : '',
-      contractEndDate: customer.contractEndDate ? format(customer.contractEndDate, 'yyyy-MM-dd') : ''
-    })
-  } else {
-    editingCustomer.value = null
-    resetForm()
-  }
-  customerDialog.value = true
+const addCustomer = () => {
+  router.push('/customers/create')
 }
 
-const closeCustomerDialog = () => {
-  customerDialog.value = false
-  editingCustomer.value = null
-  resetForm()
+// (Original navigation handlers replaced by modal versions below)
+
+const viewContracts = (customer: any) => {
+  router.push(`/customers/contracts?customer=${customer.id}`)
 }
 
-const resetForm = () => {
-  Object.assign(customerForm.value, {
-    companyName: '',
-    businessType: '',
-    tradeLicenseNumber: '',
-    tradeLicenseExpiry: '',
-    contactPersonName: '',
-    contactPersonPosition: '',
-    email: '',
-    phone: '',
-    address: '',
-    contractType: '',
-    contractStatus: '',
-    contractStartDate: '',
-    contractEndDate: '',
-    creditLimit: 0,
-    paymentTerms: 30,
-    vatNumber: '',
-    vatStatus: 'not-registered',
-    isQatarResident: true,
-    requiresCompliance: true
-  })
+const resetFilters = () => {
+  searchQuery.value = ''
+  selectedStatus.value = null
+  selectedBusinessType.value = null
 }
 
-const saveCustomer = async () => {
-  if (!formValid.value) return
+// ----------------- Action Buttons & Modal Logic -----------------
+const selectedCustomer = ref<any | null>(null)
 
-  saving.value = true
+// View
+const showViewDialog = ref(false)
+const viewCustomer = (customer: any) => {
+  selectedCustomer.value = customer
+  showViewDialog.value = true
+}
+
+// Edit
+const showEditDialog = ref(false)
+const savingEdit = ref(false)
+const editDraft = ref<any | null>(null)
+const editFormRef = ref()
+const rRequired = (v: any) => (!!v || v === 0) || 'Required'
+const rPositive = (v: number) => (v > 0) || 'Must be > 0'
+const statusOptions = ['Active','Inactive','Pending','Suspended']
+const businessTypes = ['Construction','Technology','Trading','Manufacturing','Services']
+const editCustomer = (customer: any) => {
+  editDraft.value = { ...customer }
+  selectedCustomer.value = customer
+  showEditDialog.value = true
+}
+const saveEdit = async () => {
+  if (!editDraft.value) return
+  savingEdit.value = true
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    const customerData = {
-      ...customerForm.value,
-      tradeLicenseExpiry: new Date(customerForm.value.tradeLicenseExpiry),
-      contractStartDate: customerForm.value.contractStartDate ? new Date(customerForm.value.contractStartDate) : undefined,
-      contractEndDate: customerForm.value.contractEndDate ? new Date(customerForm.value.contractEndDate) : undefined,
-      status: 'active',
-      totalRevenue: 0,
-      updatedAt: new Date()
-    }
-
-    if (editingCustomer.value) {
-      // Update existing customer
-      const index = customers.value.findIndex(c => c.id === editingCustomer.value!.id)
-      if (index !== -1) {
-        customers.value[index] = { ...customers.value[index], ...customerData }
-      }
-    } else {
-      // Add new customer
-      const newCustomer: Customer = {
-        id: `CUST-${Date.now()}`,
-        ...customerData,
-        createdAt: new Date()
-      } as Customer
-      customers.value.push(newCustomer)
-    }
-
-    showSnackbar(
-      `Customer ${editingCustomer.value ? 'updated' : 'created'} successfully`,
-      'success'
-    )
-    closeCustomerDialog()
-    updateStatistics()
-  } catch (error) {
-    showSnackbar('Error saving customer', 'error')
+    const idx = customers.value.findIndex(c => c.id === editDraft.value.id)
+    if (idx !== -1) customers.value[idx] = { ...customers.value[idx], ...editDraft.value }
+    showEditDialog.value = false
   } finally {
-    saving.value = false
+    savingEdit.value = false
   }
 }
+const closeEdit = () => { showEditDialog.value = false; editDraft.value = null }
 
-const viewCustomer = (customer: Customer) => {
-  // Navigate to customer detail view
-  console.log('View customer:', customer)
+// Invoice
+const showInvoiceDialog = ref(false)
+const submittingInvoice = ref(false)
+const invoiceFormRef = ref()
+const invoiceStatusOptions = ['Draft','Issued','Paid','Cancelled']
+const invoiceDraft = ref({ date: new Date().toISOString().slice(0,10), dueDate: new Date(Date.now()+7*86400000).toISOString().slice(0,10), amount: 0, status: 'Draft', description: '', customerId: null as number | null })
+const openInvoiceDialog = (customer: any) => {
+  selectedCustomer.value = customer
+  invoiceDraft.value = { date: new Date().toISOString().slice(0,10), dueDate: new Date(Date.now()+7*86400000).toISOString().slice(0,10), amount: 0, status: 'Draft', description: '', customerId: customer.id }
+  showInvoiceDialog.value = true
 }
-
-const editCustomer = (customer: Customer) => {
-  openCustomerDialog(customer)
-}
-
-const generateInvoice = (customer: Customer) => {
-  // Navigate to invoice generation
-  console.log('Generate invoice for:', customer)
-}
-
-const renewLicense = (customer: Customer) => {
-  console.log('Renew license for:', customer)
-}
-
-const viewContracts = (customer: Customer) => {
-  console.log('View contracts for:', customer)
-}
-
-const viewPaymentHistory = (customer: Customer) => {
-  console.log('View payment history for:', customer)
-}
-
-const deleteCustomer = async (customer: Customer) => {
-  if (confirm('Are you sure you want to delete this customer?')) {
-    const index = customers.value.findIndex(c => c.id === customer.id)
-    if (index !== -1) {
-      customers.value.splice(index, 1)
-      showSnackbar('Customer deleted successfully', 'success')
-      updateStatistics()
+const submitInvoice = async () => {
+  submittingInvoice.value = true
+  try {
+    // Stage AR invoice event (future posting batch)
+    if (invoiceDraft.value.customerId !== null) {
+      accountsStore.registerCustomerEvent({
+        type: 'invoice',
+        amount: invoiceDraft.value.amount,
+        date: invoiceDraft.value.date,
+        customerId: String(invoiceDraft.value.customerId),
+        description: invoiceDraft.value.description || `Invoice for customer ${invoiceDraft.value.customerId}`
+      } as any)
     }
+    console.log('Invoice created (placeholder):', invoiceDraft.value)
+    showInvoiceDialog.value = false
+  } finally {
+    submittingInvoice.value = false
   }
 }
+const closeInvoiceDialog = () => { showInvoiceDialog.value = false }
 
-const exportCustomers = () => {
-  // Export functionality
-  console.log('Export customers')
+// Payment
+const showPaymentDialog = ref(false)
+const submittingPayment = ref(false)
+const paymentFormRef = ref()
+const paymentMethods = ['Bank Transfer','Cash','Cheque','Card']
+const paymentDraft = ref({ date: new Date().toISOString().slice(0,10), amount: 0, method: 'Bank Transfer', reference: '', notes: '', customerId: null as number | null })
+const openPaymentDialog = (customer: any) => {
+  selectedCustomer.value = customer
+  paymentDraft.value = { date: new Date().toISOString().slice(0,10), amount: 0, method: 'Bank Transfer', reference: '', notes: '', customerId: customer.id }
+  showPaymentDialog.value = true
 }
-
-const updateStatistics = () => {
-  statistics.value = {
-    totalCustomers: customers.value.length,
-    activeCustomers: customers.value.filter(c => c.status === 'active').length,
-    expiringLicenses: customers.value.filter(c => {
-      const daysUntilExpiry = differenceInDays(c.tradeLicenseExpiry, new Date())
-      return daysUntilExpiry <= 90 && daysUntilExpiry > 0
-    }).length,
-    totalRevenue: customers.value.reduce((sum, c) => sum + c.totalRevenue, 0)
-  }
-}
-
-const showSnackbar = (message: string, color: string = 'success') => {
-  snackbar.value = { show: true, message, color }
-}
-
-const loadMockData = () => {
-  customers.value = [
-    {
-      id: 'CUST-001',
-      companyName: 'Qatar National Industries',
-      businessType: 'Manufacturing',
-      tradeLicenseNumber: 'TL-2024-001',
-      tradeLicenseExpiry: new Date('2024-12-31'),
-      contactPersonName: 'Ahmed Al-Thani',
-      contactPersonPosition: 'General Manager',
-      email: 'ahmed@qni.qa',
-      phone: '+974 4444 1234',
-      address: 'Industrial Area, Doha, Qatar',
-      contractType: 'Annual Service Contract',
-      contractStatus: 'Active',
-      contractStartDate: new Date('2024-01-01'),
-      contractEndDate: new Date('2024-12-31'),
-      creditLimit: 100000,
-      paymentTerms: 30,
-      vatNumber: 'VAT-QA-123456789',
-      vatStatus: 'registered',
-      isQatarResident: true,
-      requiresCompliance: true,
-      status: 'active',
-      totalRevenue: 250000,
-      createdAt: new Date('2024-01-01'),
-      updatedAt: new Date()
-    },
-    {
-      id: 'CUST-002',
-      companyName: 'Doha Trading Company',
-      businessType: 'Trading',
-      tradeLicenseNumber: 'TL-2024-002',
-      tradeLicenseExpiry: new Date('2024-11-15'),
-      contactPersonName: 'Sarah Mohammed',
-      contactPersonPosition: 'Operations Director',
-      email: 'sarah@dohatrading.qa',
-      phone: '+974 4444 5678',
-      address: 'West Bay, Doha, Qatar',
-      contractType: 'Project-Based Contract',
-      contractStatus: 'Active',
-      contractStartDate: new Date('2024-02-01'),
-      contractEndDate: new Date('2024-11-30'),
-      creditLimit: 75000,
-      paymentTerms: 15,
-      vatNumber: '',
-      vatStatus: 'not-registered',
-      isQatarResident: true,
-      requiresCompliance: true,
-      status: 'active',
-      totalRevenue: 150000,
-      createdAt: new Date('2024-02-01'),
-      updatedAt: new Date()
+const submitPayment = async () => {
+  submittingPayment.value = true
+  try {
+    // Stage AR receipt event
+    if (paymentDraft.value.customerId !== null) {
+      accountsStore.registerCustomerEvent({
+        type: 'receipt',
+        amount: paymentDraft.value.amount,
+        date: paymentDraft.value.date,
+        customerId: String(paymentDraft.value.customerId),
+        description: paymentDraft.value.notes || `Payment from customer ${paymentDraft.value.customerId}`
+      } as any)
     }
-  ]
-  updateStatistics()
+    console.log('Payment recorded (placeholder):', paymentDraft.value)
+    showPaymentDialog.value = false
+  } finally {
+    submittingPayment.value = false
+  }
+}
+const closePaymentDialog = () => { showPaymentDialog.value = false }
+
+// Delete
+const showDeleteDialog = ref(false)
+const openDeleteDialog = (customer: any) => { selectedCustomer.value = customer; showDeleteDialog.value = true }
+const confirmDelete = () => {
+  if (selectedCustomer.value) {
+    customers.value = customers.value.filter(c => c.id !== selectedCustomer.value!.id)
+  }
+  showDeleteDialog.value = false
+  selectedCustomer.value = null
 }
 
-onMounted(() => {
-  loadMockData()
-})
 </script>
 
 <style scoped>
-.stat-card {
-  border-left: 4px solid rgb(var(--v-theme-primary));
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
 }
 
-.v-data-table {
+.page-title {
+  color: #2c3e50;
+  font-weight: 600;
+  margin: 0;
+}
+
+.add-btn {
+  background: linear-gradient(135deg, #8B1538 0%, #6B0F2A 100%);
+  color: white;
+  font-weight: 600;
+  text-transform: none;
+  padding: 12px 24px;
   border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(139, 21, 56, 0.3);
+  transition: all 0.3s ease;
 }
 
-.v-card-title {
-  background-color: rgb(var(--v-theme-surface-variant));
+.add-btn:hover {
+  background: linear-gradient(135deg, #6B0F2A 0%, #5A0C23 100%);
+  box-shadow: 0 6px 16px rgba(139, 21, 56, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Custom Filter Section */
+.custom-filter-section {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+
+.filter-header {
+  background: linear-gradient(135deg, #8B1538 0%, #6B0F2A 100%);
+  padding: 16px 24px;
+}
+
+.filter-title {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-icon {
+  color: white;
+}
+
+.filter-content {
+  padding: 24px;
+  background: white;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 24px;
+  align-items: end;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+/* Custom Input Styles */
+.custom-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.custom-input {
+  width: 100%;
+  padding: 12px 16px 12px 48px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: white;
+  color: #374151;
+}
+
+.custom-input:focus {
+  outline: none;
+  border-color: #8B1538;
+  box-shadow: 0 0 0 3px rgba(139, 21, 56, 0.1);
+}
+
+.custom-input::placeholder {
+  color: #9ca3af;
+}
+
+.input-icon {
+  position: absolute;
+  left: 16px;
+  color: #6b7280;
+  z-index: 1;
+}
+
+.clear-btn {
+  position: absolute !important;
+  right: 8px;
+  color: #6b7280 !important;
+}
+
+/* Custom Select Styles */
+.custom-select-wrapper {
+  position: relative;
+}
+
+.custom-select {
+  width: 100%;
+  padding: 12px 40px 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  appearance: none;
+}
+
+.custom-select:focus {
+  outline: none;
+  border-color: #8B1538;
+  box-shadow: 0 0 0 3px rgba(139, 21, 56, 0.1);
+}
+
+.select-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  pointer-events: none;
+}
+
+/* Custom Reset Button */
+.custom-reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.custom-reset-btn:hover {
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+}
+
+.btn-icon {
+  color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .filter-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .filter-content {
+    padding: 16px;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+}
+
+/* Table Styles */
+.customers-table :deep(.v-table__wrapper) {
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.customers-table :deep(.v-data-table-header) {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.customers-table :deep(.v-data-table-header th) {
+  color: #374151 !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+}
+
+.customers-table :deep(.v-data-table__td) {
+  padding: 16px !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+}
+
+.customers-table :deep(.v-data-table__tr:hover) {
+  background: #f8f9fa !important;
+}
+
+/* Status Chips */
+.status-chip {
+  padding: 6px 12px !important;
+  border-radius: 20px !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.view-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: white !important;
+  min-width: auto !important;
+  padding: 8px !important;
+  border-radius: 8px !important;
+}
+
+.edit-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  color: white !important;
+  min-width: auto !important;
+  padding: 8px !important;
+  border-radius: 8px !important;
+}
+
+.delete-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  color: white !important;
+  min-width: auto !important;
+  padding: 8px !important;
+  border-radius: 8px !important;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.cursor-pointer:hover {
+  background-color: rgba(139, 21, 56, 0.04);
 }
 </style>

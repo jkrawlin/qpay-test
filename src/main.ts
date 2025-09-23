@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
 
 // App & Router
 import App from './App.vue'
@@ -19,11 +20,15 @@ initializeFirebase()
 
 // Create app
 const app = createApp(App)
+const pinia = createPinia()
+app.use(pinia)
 
-// Use plugins
-app.use(createPinia())
+// Initialize auth BEFORE mounting and router usage to ensure company context
+const authStore = useAuthStore()
+await authStore.initializeAuth()
+
+// Continue plugin registration
 app.use(router)
 app.use(vuetify)
 
-// Mount app
 app.mount('#app')

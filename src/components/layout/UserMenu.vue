@@ -167,9 +167,11 @@ const getUserInitials = computed(() => {
 
 // Methods
 const toggleTheme = () => {
-  const newTheme = theme.global.current.value.dark ? 'light' : 'dark'
-  theme.global.name.value = newTheme
-  appStore.setTheme(newTheme)
+  if (!theme?.global?.current) return
+  const isDark = theme.global.current.value.dark
+  const newThemeName = isDark ? 'qatar' : 'qatarDark'
+  theme.global.name.value = newThemeName
+  appStore.setTheme(isDark ? 'light' : 'dark')
 }
 
 const openHelpDialog = () => {

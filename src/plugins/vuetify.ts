@@ -5,87 +5,56 @@ import { aliases, mdi } from 'vuetify/iconsets/mdi'
 import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
 
-// Custom color palette for Qatar theme
+// Light theme
 const qatarTheme = {
   dark: false,
   colors: {
-    // Primary colors (Qatar maroon inspired)
     primary: '#8B1538',
     'primary-darken-1': '#6B0F2A',
+    'primary-darken-2': '#5A0C23',
     'primary-lighten-1': '#A61E4D',
-    
-    // Secondary colors (Professional blue)
-    secondary: '#1E3A5F',
-    'secondary-darken-1': '#152943',
-    'secondary-lighten-1': '#2B4C7E',
-    
-    // Accent colors
+    'primary-lighten-2': '#C7356B',
+    secondary: '#6B0F2A',
+    'secondary-darken-1': '#5A0C23',
+    'secondary-lighten-1': '#8B1538',
     accent: '#FFB800',
     'accent-darken-1': '#E5A200',
     'accent-lighten-1': '#FFC933',
-    
-    // Status colors
     success: '#2E7D32',
-    info: '#0288D1',
+    info: '#8B1538',
     warning: '#F57C00',
     error: '#C62828',
-    
-    // Background colors
-    background: '#F5F5F5',
+    background: '#FAFAFA',
     surface: '#FFFFFF',
-    'surface-variant': '#FAFAFA',
-    
-    // Text colors
+    'surface-variant': '#FFF5F5',
     'on-primary': '#FFFFFF',
     'on-secondary': '#FFFFFF',
     'on-accent': '#000000',
-    'on-surface': '#212121',
-    'on-background': '#212121',
-    
-    // Additional colors
-    'grey-lighten-5': '#FAFAFA',
-    'grey-lighten-4': '#F5F5F5',
-    'grey-lighten-3': '#EEEEEE',
-    'grey-lighten-2': '#E0E0E0',
-    'grey-lighten-1': '#BDBDBD',
-    'grey': '#9E9E9E',
-    'grey-darken-1': '#757575',
-    'grey-darken-2': '#616161',
-    'grey-darken-3': '#424242',
-    'grey-darken-4': '#212121'
+    'on-surface': '#424242',
+    'on-background': '#424242'
   }
 }
 
-// Dark theme for night mode
-const darkTheme = {
+// Dark theme variant
+const qatarDarkTheme = {
   dark: true,
   colors: {
-    primary: '#A61E4D',
-    'primary-darken-1': '#8B1538',
-    'primary-lighten-1': '#C7356B',
-    
-    secondary: '#2B4C7E',
-    'secondary-darken-1': '#1E3A5F',
-    'secondary-lighten-1': '#3D5E99',
-    
-    accent: '#FFC933',
-    'accent-darken-1': '#FFB800',
-    'accent-lighten-1': '#FFD966',
-    
+    primary: '#8B1538',
+    'primary-darken-1': '#6B0F2A',
+    secondary: '#A61E4D',
+    accent: '#FFB800',
     success: '#4CAF50',
-    info: '#03A9F4',
-    warning: '#FF9800',
-    error: '#F44336',
-    
+    info: '#C7356B',
+    warning: '#FFA726',
+    error: '#EF5350',
     background: '#121212',
     surface: '#1E1E1E',
-    'surface-variant': '#2A2A2A',
-    
+    'surface-variant': '#2A1A22',
     'on-primary': '#FFFFFF',
     'on-secondary': '#FFFFFF',
     'on-accent': '#000000',
-    'on-surface': '#FFFFFF',
-    'on-background': '#FFFFFF'
+    'on-surface': '#E0E0E0',
+    'on-background': '#E0E0E0'
   }
 }
 
@@ -100,27 +69,26 @@ export default createVuetify({
     }
   },
   theme: {
-    defaultTheme: 'qatarLight',
+    defaultTheme: 'qatar',
     themes: {
-      qatarLight: qatarTheme,
-      qatarDark: darkTheme
-    },
-    variations: {
-      colors: ['primary', 'secondary', 'accent'],
-      lighten: 5,
-      darken: 4
+      qatar: qatarTheme,
+      qatarDark: qatarDarkTheme
     }
   },
   defaults: {
     global: {
       ripple: true
     },
+    // Ensure all components use primary color
+    VDialog: {
+      color: 'surface'
+    },
     VCard: {
       elevation: 2,
-      rounded: 'lg'
+      rounded: 'lg',
+      color: 'surface'
     },
     VBtn: {
-      elevation: 2,
       rounded: 'lg',
       class: 'text-none font-weight-medium'
     },
@@ -153,6 +121,12 @@ export default createVuetify({
     VAlert: {
       rounded: 'lg',
       elevation: 2
+    },
+    VMenu: {
+      rounded: 'lg'
+    },
+    VList: {
+      rounded: 'lg'
     }
   }
 })

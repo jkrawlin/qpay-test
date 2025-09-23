@@ -343,12 +343,10 @@
                   <v-col cols="12" md="6">
                     <v-text-field
                       v-model="employee.iban"
-                      label="IBAN *"
+                      label="IBAN"
                       variant="outlined"
                       density="compact"
-                      :rules="ibanRules"
-                      required
-                      hint="QA format: QA58XXXX000000000000123456789"
+                      hint="QA format: QA58XXXX000000000000123456789 (Optional)"
                       persistent-hint
                     />
                   </v-col>
@@ -559,6 +557,17 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useEmployeeStore } from '@/stores/employees-db'
+import { useAuthStore } from '@/stores/auth'
+import { uploadEmployeeDocumentsIfAny } from '@/services/storage'
+import { useToastStore } from '@/stores/toasts'
+
+// Firestore employee store & auth
+const employeeStore = useEmployeeStore()
+const authStore = useAuthStore()
+// Derive active companyId (fallback to 'default-company' if not available)
+const companyId = computed(() => authStore.user?.companyId || 'default-company')
+const toast = useToastStore()
 
 const router = useRouter()
 const route = useRoute()
@@ -709,33 +718,72 @@ const salaryRules = [
   (v: number) => v >= 1000 || 'Minimum salary in Qatar is QAR 1,000'
 ]
 
-const ibanRules = [
-  (v: string) => !!v || 'IBAN is required',
-  (v: string) => /^QA\d{2}[A-Z]{4}\d{18}$/.test(v) || 'Invalid Qatar IBAN format (QA58XXXX000000000000123456789)'
-]
+// (Legacy placeholder) IBAN validation rules removed (field optional)
 
 // Methods
-const generateEmployeeId = () => {
-  if (!employee.employeeId) {
+// generateEmployeeId deprecated in favor of ensureUniqueEmployeeId()
+
+// Ensure unique employeeId (regenerate if auto, block if user-entered duplicate)
+const ensureUniqueEmployeeId = () => {
+  const existingIds = new Set(employeeStore.employees.map(e => e.employeeId.toLowerCase()))
+  // If user manually entered an ID
+  if (employee.employeeId) {
+    if (existingIds.has(employee.employeeId.toLowerCase())) {
+      // Collision on user-specified ID
+      throw new Error(`Employee ID ${employee.employeeId} already exists. Please choose another.`)
+    }
+    return
+  }
+  // Auto-generate until unique (max 5 attempts to avoid infinite loop)
+  let attempts = 0
+  do {
     const prefix = 'NP'
     const timestamp = Date.now().toString().slice(-6)
-    employee.employeeId = `${prefix}${timestamp}`
+    employee.employeeId = `${prefix}${timestamp}${attempts > 0 ? Math.floor(Math.random() * 9) : ''}`
+    attempts++
+  } while (attempts < 5 && existingIds.has(employee.employeeId.toLowerCase()))
+  if (existingIds.has(employee.employeeId.toLowerCase())) {
+    // Fallback - extremely unlikely
+    throw new Error('Could not generate a unique Employee ID. Please enter one manually.')
   }
 }
 
 const resetForm = () => {
   form.value?.reset()
-  Object.keys(employee).forEach(key => {
-    if (key === 'isActive') {
-      employee[key] = true
-    } else if (key === 'basicSalary') {
-      employee[key] = 0
-    } else if (key === 'qatarIdDocument' || key === 'passportDocument') {
-      employee[key] = null
-    } else {
-      employee[key] = ''
-    }
-  })
+  // Explicit reset to satisfy strict typing
+  employee.firstName = ''
+  employee.lastName = ''
+  employee.employeeId = ''
+  employee.gender = ''
+  employee.dateOfBirth = ''
+  employee.nationality = ''
+  employee.phone = ''
+  employee.email = ''
+  employee.department = ''
+  employee.position = ''
+  employee.hireDate = ''
+  employee.contractType = ''
+  employee.basicSalary = 0
+  employee.workLocation = ''
+  employee.manager = ''
+  employee.qatarId = ''
+  employee.qatarIdExpiry = ''
+  employee.passportNumber = ''
+  employee.passportExpiry = ''
+  employee.visaStatus = ''
+  employee.visaExpiry = ''
+  employee.sponsor = ''
+  employee.bankName = ''
+  employee.accountNumber = ''
+  employee.iban = ''
+  employee.qatarIdDocument = null
+  employee.passportDocument = null
+  employee.address = ''
+  employee.emergencyContact = ''
+  employee.emergencyPhone = ''
+  employee.notes = ''
+  employee.photo = null
+  employee.isActive = true
   fileInputKey.value++
 }
 
@@ -749,13 +797,13 @@ const handleFileUpload = async (event: Event, documentType: 'qatarIdDocument' | 
   // Validate file type
   const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']
   if (!allowedTypes.includes(file.type)) {
-    alert('Please upload only PDF or image files (JPG, PNG)')
+    toast.push({ message: 'Only PDF or image files (JPG, PNG) are allowed', type: 'error' })
     return
   }
   
   // Validate file size (max 5MB)
   if (file.size > 5 * 1024 * 1024) {
-    alert('File size must be less than 5MB')
+    toast.push({ message: 'File size must be less than 5MB', type: 'error' })
     return
   }
   
@@ -810,56 +858,209 @@ const saveAsDraft = async () => {
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1000))
     
-    alert('Employee information saved as draft successfully!')
+  toast.push({ message: 'Employee draft saved locally', type: 'success' })
     
     // Redirect back to the previous page
     router.push({ name: backRoute.value })
   } catch (error) {
     console.error('Error saving draft:', error)
-    alert('Failed to save draft. Please try again.')
+    toast.push({ message: 'Failed to save draft', type: 'error' })
   } finally {
     saving.value = false
   }
 }
 
 const saveEmployee = async () => {
+  // Run base Vuetify validation first
   if (!formValid.value) {
-    alert('Please fill in all required fields correctly.')
+    toast.push({ message: 'Please correct the highlighted validation errors', type: 'error' })
     return
   }
-  
+
+  // Enhanced group + business validation
+  const validationErrors = validateEmployeeForm()
+  if (validationErrors.length) {
+    // Show up to first 5 errors individually to avoid toast spam
+    validationErrors.slice(0, 5).forEach(err => toast.push({ message: err, type: 'error' }))
+    if (validationErrors.length > 5) {
+      toast.push({ message: `+ ${validationErrors.length - 5} more issues...`, type: 'error' })
+    }
+    return
+  }
+
   saving.value = true
   try {
-    // Generate employee ID if not provided
-    generateEmployeeId()
-    
-    // Create new employee object
-    const newEmployee = {
-      ...employee,
-      id: `EMP_${Date.now()}`,
-      status: 'Active',
-      createdAt: new Date().toISOString(),
-      lastModified: new Date().toISOString()
+    // Ensure ID uniqueness
+    ensureUniqueEmployeeId()
+
+    // Map form data to Firestore Employee shape
+    const type = employeeType.value === 'temporary' ? 'temporary' : 'permanent'
+    const status = employee.isActive ? 'active' : 'inactive'
+
+    const employeePayload = {
+      employeeId: employee.employeeId,
+      firstName: employee.firstName.trim(),
+      lastName: employee.lastName.trim(),
+      email: employee.email?.trim() || '',
+      phone: employee.phone?.trim() || '',
+      position: employee.position,
+      department: employee.department,
+      salary: Number(employee.basicSalary) || 0,
+      hireDate: employee.hireDate,
+      status: status as 'active' | 'inactive' | 'terminated',
+      type: type as 'permanent' | 'temporary' | 'contract',
+      nationality: employee.nationality,
+      qatarId: employee.qatarId || undefined,
+      passportNumber: employee.passportNumber || undefined,
+      visa: employee.visaStatus ? {
+        number: `AUTO-${Date.now()}`,
+        expiryDate: employee.visaExpiry || '',
+        status: employee.visaStatus
+      } : undefined,
+      // Optional placeholders for model completeness
+      workPermit: undefined,
+      address: employee.address || undefined,
+      emergencyContact: employee.emergencyContact ? {
+        name: employee.emergencyContact,
+        phone: employee.emergencyPhone || '',
+        relationship: 'N/A'
+      } : undefined,
+      // Metadata (companyId can be injected later once auth/org implemented)
+      companyId: companyId.value
     }
-    
-    // Save to localStorage (in a real app, this would be saved to backend)
-    const existingEmployees = JSON.parse(localStorage.getItem('employees') || '[]')
-    existingEmployees.push(newEmployee)
-    localStorage.setItem('employees', JSON.stringify(existingEmployees))
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    alert(`Employee ${employee.firstName} ${employee.lastName} created successfully!`)
-    
-    // Redirect back to the previous page
+
+    const newId = await employeeStore.createEmployee(employeePayload as any)
+    toast.push({ message: `Employee ${employee.firstName} ${employee.lastName} created`, type: 'success' })
+
+    // Upload documents if present
+    if (employee.qatarIdDocument || employee.passportDocument) {
+      uploading.value = true
+      toast.push({ message: 'Uploading documents...', type: 'info' })
+      try {
+        const uploaded = await uploadEmployeeDocumentsIfAny(companyId.value, newId, {
+          qatarIdDocument: employee.qatarIdDocument || undefined,
+          passportDocument: employee.passportDocument || undefined
+        })
+        const hasUpdates = Object.keys(uploaded).length > 0
+        if (hasUpdates) {
+          await employeeStore.updateEmployee(newId, uploaded as any)
+          toast.push({ message: 'Documents uploaded successfully', type: 'success' })
+        }
+      } catch (docErr) {
+        console.error('Document upload failed:', docErr)
+        toast.push({ message: 'Some documents failed to upload', type: 'error' })
+      } finally {
+        uploading.value = false
+      }
+    }
+
     router.push({ name: backRoute.value })
   } catch (error) {
     console.error('Error creating employee:', error)
-    alert('Failed to create employee. Please try again.')
+    const message = error instanceof Error ? error.message : 'Failed to create employee'
+    toast.push({ message, type: 'error' })
   } finally {
     saving.value = false
   }
+}
+
+// Enhanced validation logic (group + business rules)
+const validateEmployeeForm = (): string[] => {
+  const errors: string[] = []
+  const today = new Date().toISOString().split('T')[0]
+
+  // Helper functions (local to validation to avoid global clutter)
+  const calcAge = (dateStr: string) => {
+    const d = new Date(dateStr)
+    const now = new Date()
+    let age = now.getFullYear() - d.getFullYear()
+    const mDiff = now.getMonth() - d.getMonth()
+    if (mDiff < 0 || (mDiff === 0 && now.getDate() < d.getDate())) age--
+    return age
+  }
+  const isFuture = (dateStr: string) => new Date(dateStr) > new Date()
+  const isPastOrToday = (dateStr: string) => new Date(dateStr) <= new Date()
+
+  // Helper to check empty
+  const isEmpty = (v: any) => v === undefined || v === null || (typeof v === 'string' && v.trim() === '')
+
+  // Group: Personal
+  const personalFields: Record<string, any> = {
+    'First Name': employee.firstName,
+    'Last Name': employee.lastName,
+    'Gender': employee.gender,
+    'Date of Birth': employee.dateOfBirth,
+    'Nationality': employee.nationality,
+    'Phone Number': employee.phone
+  }
+  Object.entries(personalFields).forEach(([label, value]) => {
+    if (isEmpty(value)) errors.push(`${label} is required`)
+  })
+
+  // Birth date sanity (must be past and age < 80 > 15)
+  if (employee.dateOfBirth) {
+    if (isFuture(employee.dateOfBirth)) errors.push('Date of Birth cannot be in the future')
+    const age = calcAge(employee.dateOfBirth)
+    // Relaxed age rule for test data (allow age >= 14). If needed remove entirely later.
+    if (age < 14) errors.push('Employee must be at least 14 years old')
+    if (age > 80) errors.push('Employee age seems invalid (> 80)')
+  }
+
+  // Group: Employment
+  const employmentFields: Record<string, any> = {
+    'Department': employee.department,
+    'Position': employee.position,
+    'Hire Date': employee.hireDate,
+    'Contract Type': employee.contractType,
+    'Work Location': employee.workLocation
+  }
+  Object.entries(employmentFields).forEach(([label, value]) => {
+    if (isEmpty(value)) errors.push(`${label} is required`)
+  })
+  if (!employee.basicSalary || employee.basicSalary <= 0) {
+    errors.push('Basic Salary must be greater than 0')
+  } else if (employee.basicSalary < 1000) {
+    errors.push('Basic Salary must be at least QAR 1,000')
+  }
+
+  // Group: Documents (Qatar requires these for sponsored employees)
+  const documentFields: Record<string, any> = {
+    'Qatar ID Number': employee.qatarId,
+    'Qatar ID Expiry Date': employee.qatarIdExpiry,
+    'Passport Number': employee.passportNumber,
+    'Passport Expiry Date': employee.passportExpiry,
+    'Visa Status': employee.visaStatus
+  }
+  Object.entries(documentFields).forEach(([label, value]) => {
+    if (isEmpty(value)) errors.push(`${label} is required`)
+  })
+
+  // Expiry future checks
+  if (employee.qatarIdExpiry && employee.qatarIdExpiry <= today) {
+    errors.push('Qatar ID expiry must be a future date')
+  }
+  if (employee.passportExpiry && employee.passportExpiry <= today) {
+    errors.push('Passport expiry must be a future date')
+  }
+  // Visa expiry: allow empty OR today (only flag if explicitly in the past)
+  if (employee.visaExpiry) {
+    if (employee.visaExpiry < today) {
+      errors.push('Visa expiry must not be in the past')
+    }
+  }
+
+  // Group: Banking
+  const bankingFields: Record<string, any> = {
+    'Bank Name': employee.bankName,
+    'Account Number': employee.accountNumber
+  }
+  Object.entries(bankingFields).forEach(([label, value]) => {
+    if (isEmpty(value)) errors.push(`${label} is required`)
+  })
+
+  // IBAN validation removed entirely (field optional for rapid test entry)
+
+  return errors
 }
 
 onMounted(() => {
@@ -868,6 +1069,14 @@ onMounted(() => {
   
   // Set default sponsor (this would come from company settings)
   employee.sponsor = 'Al Wakra Construction Company'
+
+  // Ensure employee store initialized (real-time listener)
+  // For now no company scoping
+  try {
+    employeeStore.initialize(companyId.value)
+  } catch (e) {
+    console.warn('Employee store init failed (possibly already initialized):', e)
+  }
 })
 </script>
 

@@ -1,7 +1,36 @@
 <template>
-  <div class="navigation-drawer enhanced-nav">
+  <div
+    class="navigation-drawer enhanced-nav"
+    :class="{ collapsed }"
+    role="navigation"
+    aria-label="Main navigation"
+  >
+    <!-- Brand / Collapse Header -->
+    <div class="nav-header" :class="{ 'is-collapsed': collapsed }">
+      <div
+        class="brand"
+        role="button"
+        tabindex="0"
+        @click="toggleCollapse"
+        @keydown.enter.prevent="toggleCollapse"
+        :aria-label="collapsed ? 'Expand navigation' : 'Collapse navigation'"
+      >
+        <v-icon class="brand-icon" :size="collapsed ? 28 : 32">mdi-alpha-n-box</v-icon>
+        <span class="brand-text" v-if="!collapsed">QPay Portal</span>
+      </div>
+      <v-btn
+        class="collapse-btn"
+        icon
+        size="small"
+        variant="text"
+        :aria-label="collapsed ? 'Expand navigation' : 'Collapse navigation'"
+        @click="toggleCollapse"
+      >
+        <v-icon>{{ collapsed ? 'mdi-arrow-expand-right' : 'mdi-arrow-collapse-left' }}</v-icon>
+      </v-btn>
+    </div>
     <!-- Scrollable Navigation Menu -->
-    <div class="navigation-content enhanced-scroll">
+    <div class="navigation-content enhanced-scroll" :class="{ 'is-collapsed': collapsed }">
       <v-list nav class="scrollable-list" density="compact">
         <!-- Dashboard -->
         <v-list-item
@@ -25,15 +54,6 @@
             >
               <template #prepend>
                 <v-icon class="nav-icon">mdi-account-group</v-icon>
-              </template>
-              <template #append>
-                <v-badge
-                  v-if="employeeCount > 0"
-                  :content="employeeCount"
-                  color="primary"
-                  inline
-                  class="enhanced-badge"
-                />
               </template>
             </v-list-item>
           </template>
@@ -74,16 +94,6 @@
             </v-list-item>
           </template>
 
-          <v-list-item
-            :to="{ name: 'PayrollDashboard' }"
-            title="Dashboard"
-            value="payroll-dashboard"
-            class="nav-sub-item enhanced-nav-sub"
-          >
-            <template #prepend>
-              <v-icon class="nav-sub-icon">mdi-chart-line</v-icon>
-            </template>
-          </v-list-item>
           <v-list-item
             :to="{ name: 'SalaryManagement' }"
             title="Salary Management"
@@ -237,13 +247,13 @@
             </template>
           </v-list-item>
           <v-list-item
-            :to="{ name: 'BankReconciliation' }"
-            title="Bank Reconciliation"
-            value="bank-reconciliation"
+            :to="{ name: 'GeneralLedger' }"
+            title="Ledger"
+            value="general-ledger"
             class="nav-sub-item enhanced-nav-sub"
           >
             <template #prepend>
-              <v-icon class="nav-sub-icon">mdi-bank</v-icon>
+              <v-icon class="nav-sub-icon">mdi-table</v-icon>
             </template>
           </v-list-item>
         </v-list-group>
@@ -273,17 +283,6 @@
             </template>
           </v-list-item>
           <v-list-item
-            :to="{ name: 'CustomerCreate' }"
-            title="Add Customer"
-            value="customer-create"
-            v-if="hasPermission('customer-create')"
-            class="nav-sub-item enhanced-nav-sub"
-          >
-            <template #prepend>
-              <v-icon class="nav-sub-icon">mdi-plus</v-icon>
-            </template>
-          </v-list-item>
-          <v-list-item
             :to="{ name: 'ContractManagement' }"
             title="Contracts"
             value="contract-management"
@@ -291,16 +290,6 @@
           >
             <template #prepend>
               <v-icon class="nav-sub-icon">mdi-file-document</v-icon>
-            </template>
-          </v-list-item>
-          <v-list-item
-            :to="{ name: 'ClientPortal' }"
-            title="Client Portal"
-            value="client-portal"
-            class="nav-sub-item enhanced-nav-sub"
-          >
-            <template #prepend>
-              <v-icon class="nav-sub-icon">mdi-web</v-icon>
             </template>
           </v-list-item>
         </v-list-group>
@@ -357,62 +346,6 @@
           >
             <template #prepend>
               <v-icon class="nav-sub-icon">mdi-credit-card-check</v-icon>
-            </template>
-          </v-list-item>
-        </v-list-group>
-
-        <!-- Analytics & Reports -->
-        <v-list-group value="analytics" v-if="hasPermission('analytics')">
-          <template #activator="{ props }">
-            <v-list-item
-              v-bind="props"
-              title="Analytics"
-              class="nav-group enhanced-nav-group"
-            >
-              <template #prepend>
-                <v-icon class="nav-icon">mdi-chart-line</v-icon>
-              </template>
-            </v-list-item>
-          </template>
-
-          <v-list-item
-            :to="{ name: 'AnalyticsDashboard' }"
-            title="Dashboard"
-            value="analytics-dashboard"
-            class="nav-sub-item enhanced-nav-sub"
-          >
-            <template #prepend>
-              <v-icon class="nav-sub-icon">mdi-monitor-dashboard</v-icon>
-            </template>
-          </v-list-item>
-          <v-list-item
-            :to="{ name: 'HRAnalytics' }"
-            title="HR Analytics"
-            value="hr-analytics"
-            class="nav-sub-item enhanced-nav-sub"
-          >
-            <template #prepend>
-              <v-icon class="nav-sub-icon">mdi-account-multiple</v-icon>
-            </template>
-          </v-list-item>
-          <v-list-item
-            :to="{ name: 'FinancialAnalytics' }"
-            title="Financial Analytics"
-            value="financial-analytics"
-            class="nav-sub-item enhanced-nav-sub"
-          >
-            <template #prepend>
-              <v-icon class="nav-sub-icon">mdi-chart-pie</v-icon>
-            </template>
-          </v-list-item>
-          <v-list-item
-            :to="{ name: 'ComplianceReports' }"
-            title="Compliance Reports"
-            value="compliance-reports"
-            class="nav-sub-item enhanced-nav-sub"
-          >
-            <template #prepend>
-              <v-icon class="nav-sub-icon">mdi-file-check</v-icon>
             </template>
           </v-list-item>
         </v-list-group>
@@ -478,7 +411,7 @@
     </div>
 
     <!-- Footer Section -->
-    <div class="navigation-footer enhanced-footer">
+    <div class="navigation-footer enhanced-footer" :class="{ 'is-collapsed': collapsed }">
       <!-- Premium Badge -->
       <div class="premium-badge" v-if="hasPremiumAccess">
         <v-chip
@@ -505,19 +438,26 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 // Simplified without auth - allow access to all features
 const hasPermission = (_permission: string) => true
 const isAdmin = computed(() => true)
 const hasPremiumAccess = computed(() => true)
 
+// Collapsing state
+const collapsed = ref(false)
+const toggleCollapse = () => {
+  collapsed.value = !collapsed.value
+}
+
 // Mock data for alerts count - in real app this would come from a store
 const expiryAlertsCount = computed(() => 5) // This should be fetched from compliance store
-const employeeCount = computed(() => 245) // Mock employee count
+// Removed employeeCount badge per refinement request
 </script>
 
 <style scoped>
+/* Ultra compact adjustments (pass 3) */
 .navigation-drawer {
   height: 100vh;
   display: flex;
@@ -525,6 +465,70 @@ const employeeCount = computed(() => 245) // Mock employee count
   overflow: hidden;
   background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
   box-shadow: var(--shadow-lg);
+  width: 248px; /* even narrower */
+  transition: width var(--transition-fast), background var(--transition-fast);
+}
+
+.navigation-drawer.collapsed {
+  width: 66px; /* slimmer */
+}
+
+.nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-xs) var(--spacing-sm);
+  min-height: 56px;
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(90deg, #8B1538 0%, #6B0F2A 100%);
+  position: relative;
+}
+
+.nav-header.is-collapsed {
+  justify-content: center;
+  padding-right: var(--spacing-sm);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: .5px;
+  user-select: none;
+}
+
+.brand:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.brand-icon {
+  color: #fff !important;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+}
+
+.brand-text {
+  font-size: 15px;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.collapse-btn {
+  position: absolute;
+  top: 6px;
+  right: 4px;
+  color: #fff !important;
+  opacity: .85;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.collapse-btn:hover {
+  opacity: 1;
+  transform: scale(1.05);
 }
 
 .enhanced-nav {
@@ -535,8 +539,12 @@ const employeeCount = computed(() => 245) // Mock employee count
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 8px 0;
+  padding: 4px 0; /* tighter */
   background: var(--gradient-surface-light);
+}
+
+.navigation-drawer.collapsed .navigation-content {
+  padding-top: var(--spacing-sm);
 }
 
 .enhanced-scroll {
@@ -575,13 +583,15 @@ const employeeCount = computed(() => 245) // Mock employee count
 
 /* Navigation Items */
 .enhanced-nav-item {
-  margin: var(--spacing-xs) var(--spacing-sm);
+  margin: 0 3px; /* tighter */
   border-radius: var(--border-radius-md);
-  min-height: 44px !important;
-  font-size: 14px;
+  min-height: 38px !important; /* reduced */
+  font-size: 13px;
   transition: all var(--transition-fast);
   position: relative;
   overflow: hidden;
+  padding-inline: 7px !important; /* reduced */
+  line-height: 1.22; /* denser */
 }
 
 .enhanced-nav-item::before {
@@ -600,57 +610,105 @@ const employeeCount = computed(() => 245) // Mock employee count
 }
 
 .enhanced-nav-group {
-  margin: var(--spacing-xs) var(--spacing-sm);
+  margin: 2px 3px 2px 3px;
   border-radius: var(--border-radius-md);
-  min-height: 44px !important;
-  font-size: 14px;
+  min-height: 38px !important;
+  font-size: 13px;
   font-weight: 600;
   transition: all var(--transition-fast);
+  padding-inline: 5px !important;
+  line-height: 1.22;
 }
 
 .enhanced-nav-sub {
-  margin: var(--spacing-xs) var(--spacing-sm);
+  margin: 0 3px; /* tighter */
   border-radius: var(--border-radius-md);
-  min-height: 40px !important;
-  font-size: 13px;
-  padding-left: calc(var(--spacing-xl) + var(--spacing-lg)) !important;
+  min-height: 34px !important; /* reduced */
+  font-size: 12.25px;
+  padding-left: 36px !important; /* less indent */
   transition: all var(--transition-fast);
   position: relative;
+  padding-right: 5px !important;
+  line-height: 1.2;
 }
 
 .enhanced-nav-sub::before {
   content: '';
   position: absolute;
-  left: var(--spacing-xl);
+  left: 26px; /* align with new indent */
   top: 50%;
-  width: var(--spacing-sm);
+  width: 5px; /* smaller connector */
   height: 1px;
   background: var(--color-border);
   transform: translateY(-50%);
 }
 
 .nav-icon {
-  font-size: 20px !important;
+  font-size: 18px !important; /* slightly smaller */
   transition: all var(--transition-fast);
 }
 
 .nav-sub-icon {
-  font-size: 18px !important;
+  font-size: 16px !important; /* slightly smaller */
   transition: all var(--transition-fast);
 }
 
 .v-list-item--active {
-  background: var(--gradient-primary-light) !important;
-  color: #8B1538 !important;
-  font-weight: 600 !important;
-  box-shadow: var(--shadow-sm);
+  font-weight: 500 !important;
+  letter-spacing: 0.2px;
+  line-height: 1.3;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
 }
 
 .v-list-item--active .nav-icon,
 .v-list-item--active .nav-sub-icon {
   color: #8B1538 !important;
-  transform: scale(1.1);
-  text-shadow: 0 1px 2px rgba(139, 21, 56, 0.1);
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+  justify-content: center;
+}
+
+/* Collapsed mode adjustments */
+.navigation-drawer.collapsed .enhanced-nav-item,
+.navigation-drawer.collapsed .enhanced-nav-group,
+.navigation-drawer.collapsed .enhanced-nav-sub {
+  padding-left: 1px !important;
+  padding-right: 1px !important;
+  justify-content: center;
+}
+
+.navigation-drawer.collapsed .enhanced-nav-sub {
+  padding-left: 1px !important;
+}
+
+.navigation-drawer.collapsed .v-list-item-title,
+.navigation-drawer.collapsed .v-list-item-subtitle,
+.navigation-drawer.collapsed .enhanced-badge,
+.navigation-drawer.collapsed .enhanced-chip {
+  position: absolute !important;
+  left: -9999px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.navigation-drawer.collapsed .enhanced-nav-sub::before {
+  display: none;
+}
+
+.navigation-drawer.collapsed .nav-icon,
+.navigation-drawer.collapsed .nav-sub-icon {
+  margin-inline-end: 0 !important;
+}
+
+.navigation-drawer.collapsed .navigation-footer {
+  padding: var(--spacing-xs) 0 !important;
+}
+
+.navigation-drawer.collapsed .premium-badge,
+.navigation-drawer.collapsed .version-info {
+  display: none;
 }
 
 .enhanced-badge {
@@ -690,6 +748,12 @@ const employeeCount = computed(() => 245) // Mock employee count
 .enhanced-nav-sub:hover {
   background: var(--color-surface-hover) !important;
   transform: translateX(2px);
+}
+
+.navigation-drawer.collapsed .enhanced-nav-item:hover,
+.navigation-drawer.collapsed .enhanced-nav-group:hover,
+.navigation-drawer.collapsed .enhanced-nav-sub:hover {
+  transform: none;
 }
 
 .v-list-item--active:hover {

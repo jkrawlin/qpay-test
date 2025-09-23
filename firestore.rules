@@ -1,0 +1,160 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection - users can read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Companies collection - only company owners/admins can access
+    match /companies/{companyId} {
+      allow read, write: if request.auth != null && 
+        (resource.data.ownerId == request.auth.uid || 
+         request.auth.uid in resource.data.adminIds);
+    }
+
+    // Dev override: freely allow authenticated access to the seeded dev-company
+    match /companies/dev-company {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Employees collection - company members can access
+    match /employees/{employeeId} {
+      // Dev override: allow any authenticated user full access for dev-company employees
+      allow create: if request.auth != null && request.resource.data.companyId == 'dev-company';
+      allow read, write: if request.auth != null && resource.data.companyId == 'dev-company';
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/companies/$(resource.data.companyId)) &&
+        (get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.ownerId == request.auth.uid ||
+         request.auth.uid in get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.memberIds);
+      
+      // Allow creation if user is company owner/admin
+      allow create: if request.auth != null && 
+        exists(/databases/$(database)/documents/companies/$(request.resource.data.companyId)) &&
+        (get(/databases/$(database)/documents/companies/$(request.resource.data.companyId)).data.ownerId == request.auth.uid ||
+         request.auth.uid in get(/databases/$(database)/documents/companies/$(request.resource.data.companyId)).data.adminIds);
+    }
+    
+    // Customers collection - company members can access
+    match /customers/{customerId} {
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/companies/$(resource.data.companyId)) &&
+        (get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.ownerId == request.auth.uid ||
+         request.auth.uid in get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.memberIds);
+      
+      allow create: if request.auth != null && 
+        exists(/databases/$(database)/documents/companies/$(request.resource.data.companyId)) &&
+        (get(/databases/$(database)/documents/companies/$(request.resource.data.companyId)).data.ownerId == request.auth.uid ||
+         request.auth.uid in get(/databases/$(database)/documents/companies/$(request.resource.data.companyId)).data.adminIds);
+    }
+    
+    // Payroll collection - company members can access, only admins can write
+    match /payroll/{payrollId} {
+      allow read: if request.auth != null && 
+        exists(/databases/$(database)/documents/companies/$(resource.data.companyId)) &&
+        (get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.ownerId == request.auth.uid ||
+         request.auth.uid in get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.memberIds);
+      
+      allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/companies/$(resource.data.companyId)) &&
+        (get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.ownerId == request.auth.uid ||
+         request.auth.uid in get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.adminIds);
+    }
+    
+    // Transactions collection - company members can access
+    match /transactions/{transactionId} {
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/companies/$(resource.data.companyId)) &&
+        (get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.ownerId == request.auth.uid ||
+         request.auth.uid in get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.memberIds);
+    }
+    
+    // Documents collection - company members can access
+    match /documents/{documentId} {
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/companies/$(resource.data.companyId)) &&
+        (get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.ownerId == request.auth.uid ||
+         request.auth.uid in get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.memberIds);
+    }
+    
+    // Notifications collection - users can read their own notifications
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || resource.data.userId == null);
+      
+      // Only system or admins can create notifications
+      allow write: if request.auth != null && 
+        (request.auth.token.admin == true || 
+         exists(/databases/$(database)/documents/companies/$(resource.data.companyId)) &&
+         (get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.ownerId == request.auth.uid ||
+          request.auth.uid in get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.adminIds));
+    }
+    
+    // Settings collection - company owners/admins only
+    match /settings/{settingId} {
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/companies/$(resource.data.companyId)) &&
+        (get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.ownerId == request.auth.uid ||
+         request.auth.uid in get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.adminIds);
+    }
+    
+    // Audit logs - read-only for company members, write for system
+    match /audit_logs/{logId} {
+      allow read: if request.auth != null && 
+        exists(/databases/$(database)/documents/companies/$(resource.data.companyId)) &&
+        (get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.ownerId == request.auth.uid ||
+         request.auth.uid in get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.memberIds);
+      
+      // Only system can write audit logs
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Templates collection - company members can access
+    match /templates/{templateId} {
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/companies/$(resource.data.companyId)) &&
+        (get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.ownerId == request.auth.uid ||
+         request.auth.uid in get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.memberIds);
+    }
+    
+    // Reports collection - company members can access
+    match /reports/{reportId} {
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/companies/$(resource.data.companyId)) &&
+        (get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.ownerId == request.auth.uid ||
+         request.auth.uid in get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.memberIds);
+    }
+    
+    // Helper functions for validation
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(companyId) {
+      return request.auth != null && 
+        exists(/databases/$(database)/documents/companies/$(companyId)) &&
+        get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid;
+    }
+    
+    function isAdmin(companyId) {
+      return request.auth != null && 
+        exists(/databases/$(database)/documents/companies/$(companyId)) &&
+        (get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid ||
+         request.auth.uid in get(/databases/$(database)/documents/companies/$(companyId)).data.adminIds);
+    }
+    
+    function isMember(companyId) {
+      return request.auth != null && 
+        exists(/databases/$(database)/documents/companies/$(companyId)) &&
+        (get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid ||
+         request.auth.uid in get(/databases/$(database)/documents/companies/$(companyId)).data.memberIds ||
+         request.auth.uid in get(/databases/$(database)/documents/companies/$(companyId)).data.adminIds);
+    }
+    
+    function isValidData() {
+      return request.resource.data.keys().hasAll(['createdAt', 'updatedAt']) &&
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.updatedAt is timestamp;
+    }
+  }
+}

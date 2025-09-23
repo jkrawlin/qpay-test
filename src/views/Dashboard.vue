@@ -34,40 +34,6 @@
       </v-col>
     </v-row>
 
-    <!-- Stats Cards -->
-    <v-row>
-      <v-col v-for="stat in stats" :key="stat.title" cols="12" sm="6" lg="3">
-        <v-card
-          class="stat-card"
-          :style="`background: ${stat.gradient}`"
-          elevation="4"
-        >
-          <v-card-text>
-            <div class="d-flex align-center justify-space-between">
-              <div>
-                <p class="stat-label">{{ stat.title }}</p>
-                <p class="stat-value">{{ stat.value }}</p>
-                <div :class="['stat-change', stat.trend > 0 ? 'positive' : 'negative']">
-                  <v-icon size="16" color="white">
-                    {{ stat.trend > 0 ? 'mdi-trending-up' : 'mdi-trending-down' }}
-                  </v-icon>
-                  <span style="color: white">{{ Math.abs(stat.trend) }}% from last month</span>
-                </div>
-              </div>
-              <v-avatar
-                size="56"
-                color="white"
-                variant="tonal"
-                style="background: rgba(255, 255, 255, 0.2) !important"
-              >
-                <v-icon size="28" color="white">{{ stat.icon }}</v-icon>
-              </v-avatar>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-
     <!-- Quick Actions -->
     <v-row class="mt-4">
       <v-col cols="12">

@@ -52,9 +52,7 @@ export default defineConfig({
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
               },
-              cacheKeyWillBeUsed: async ({ request }) => {
-                return `${request.url}`
-              }
+              // Removed cacheKeyWillBeUsed (not part of runtimeCaching.options schema in this plugin version)
             }
           }
         ]

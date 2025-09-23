@@ -6,15 +6,15 @@ import { getMessaging, getToken, onMessage } from 'firebase/messaging'
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions'
 
 // Firebase configuration
-// Note: These are public configuration values that should be replaced with your actual Firebase project config
+// Note: These are public configuration values - update with your actual Firebase project config
 const firebaseConfig = {
-  apiKey: "your-api-key-here",
-  authDomain: "nipon-payroll-pro.firebaseapp.com",
-  projectId: "nipon-payroll-pro",
-  storageBucket: "nipon-payroll-pro.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456",
-  measurementId: "G-XXXXXXXXXX"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "your-api-key-here",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "nipontest-21f1c.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "nipontest-21f1c",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "nipontest-21f1c.appspot.com",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:123456789:web:abcdef123456",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-XXXXXXXXXX"
 }
 
 // Initialize Firebase
@@ -72,14 +72,19 @@ const setupMessaging = async () => {
   if (!messaging) return
 
   try {
+    // Guard: skip if no real VAPID key configured
+    const vapidKey = 'your-vapid-key-here'
+    if (!vapidKey || vapidKey === 'your-vapid-key-here') {
+      console.warn('Skipping FCM setup: No valid VAPID key configured')
+      return
+    }
+
     // Request notification permission
     const permission = await Notification.requestPermission()
     
     if (permission === 'granted') {
       // Get FCM token
-      const token = await getToken(messaging, {
-        vapidKey: 'your-vapid-key-here' // Replace with your actual VAPID key
-      })
+      const token = await getToken(messaging, { vapidKey })
       
       if (token) {
         console.log('FCM token:', token)

@@ -13,13 +13,14 @@
               Manage employee advance loans, applications, and repayments
             </p>
           </div>
-          <div class="d-flex gap-3">
+          <div class="d-flex gap-3 align-center">
             <v-btn
-              color="success"
+              color="#8B1538"
               size="large"
               elevation="2"
               @click="openNewLoanDialog"
               class="enhanced-btn"
+              variant="elevated"
             >
               <template #prepend>
                 <v-icon>mdi-plus</v-icon>
@@ -28,7 +29,7 @@
             </v-btn>
             <v-btn
               variant="outlined"
-              color="primary"
+              color="#8B1538"
               size="large"
               @click="exportLoanData"
               class="enhanced-btn"
@@ -44,135 +45,97 @@
     </div>
 
     <v-container fluid class="pa-spacing-lg">
-      <!-- Summary Cards -->
-      <v-row class="mb-spacing-lg">
-        <v-col cols="12" md="3" v-for="card in loanCards" :key="card.title">
-          <v-card 
-            class="stats-card"
-            :class="`stats-${card.color}`"
-            elevation="4"
-          >
-            <v-card-text class="pa-spacing-lg">
-              <div class="d-flex justify-space-between align-center">
-                <div>
-                  <p class="text-subtitle-2 mb-2 opacity-90">{{ card.title }}</p>
-                  <h2 class="text-h4 font-weight-bold mb-2">{{ card.value }}</h2>
-                  <div class="d-flex align-center">
-                    <v-icon 
-                      size="small" 
-                      :class="card.trend > 0 ? 'text-white' : 'text-red-lighten-1'"
-                      class="mr-1"
-                    >
-                      {{ card.trend > 0 ? 'mdi-trending-up' : 'mdi-trending-down' }}
-                    </v-icon>
-                    <span class="text-caption opacity-90">
-                      {{ Math.abs(card.trend) }}% from last month
-                    </span>
-                  </div>
-                </div>
-                <v-icon size="48" class="stats-icon">{{ card.icon }}</v-icon>
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-
-      <!-- Charts Row -->
-      <v-row class="mb-spacing-lg">
-        <v-col cols="12" md="8">
-          <v-card class="enhanced-card" elevation="4">
-            <v-card-title class="pa-spacing-lg">
-              <v-icon class="mr-3" color="primary">mdi-chart-line</v-icon>
-              Loan Trends
-            </v-card-title>
-            <v-card-text class="pa-spacing-lg">
-              <canvas ref="loanTrendsChart" height="100"></canvas>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="12" md="4">
-          <v-card class="enhanced-card" elevation="4">
-            <v-card-title class="pa-spacing-lg">
-              <v-icon class="mr-3" color="success">mdi-chart-donut</v-icon>
-              Loan Status
-            </v-card-title>
-            <v-card-text class="pa-spacing-lg">
-              <canvas ref="loanStatusChart" height="100"></canvas>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-
-      <!-- Filters -->
-      <v-card class="enhanced-card mb-spacing-lg" elevation="2">
-        <v-card-text class="pa-spacing-lg">
-          <v-row align="center">
-            <v-col cols="12" md="3">
-              <v-text-field
-                v-model="searchQuery"
-                label="Search loans..."
-                variant="outlined"
-                density="compact"
-                prepend-inner-icon="mdi-magnify"
-                clearable
-                hide-details
-              />
-            </v-col>
-            <v-col cols="12" md="2">
-              <v-select
-                v-model="selectedStatus"
-                :items="loanStatuses"
-                label="Status"
-                variant="outlined"
-                density="compact"
-                clearable
-                hide-details
-              />
-            </v-col>
-            <v-col cols="12" md="2">
-              <v-select
-                v-model="selectedDepartment"
-                :items="departments"
-                label="Department"
-                variant="outlined"
-                density="compact"
-                clearable
-                hide-details
-              />
-            </v-col>
-            <v-col cols="12" md="2">
-              <v-select
-                v-model="loanAmountRange"
-                :items="amountRanges"
-                label="Amount Range"
-                variant="outlined"
-                density="compact"
-                clearable
-                hide-details
-              />
-            </v-col>
-            <v-col cols="12" md="3">
-              <div class="d-flex gap-2">
+      <!-- Search Filters - Custom Design -->
+      <div class="custom-filter-section mb-spacing-lg">
+        <div class="filter-header">
+          <h3 class="filter-title">
+            <v-icon class="filter-icon">mdi-filter-variant</v-icon>
+            Search & Filter Loans
+          </h3>
+        </div>
+        <div class="filter-content">
+          <div class="filter-row">
+            <div class="filter-item">
+              <label class="filter-label">Search Loans</label>
+              <div class="custom-input-wrapper">
+                <v-icon class="input-icon">mdi-magnify</v-icon>
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Search by employee, loan ID, purpose..."
+                  class="custom-input"
+                />
                 <v-btn
-                  color="primary"
-                  variant="outlined"
-                  @click="resetFilters"
-                  class="enhanced-btn"
-                >
+                  v-if="searchQuery"
+                  icon="mdi-close"
+                  size="x-small"
+                  variant="text"
+                  class="clear-btn"
+                  @click="searchQuery = ''"
+                />
+              </div>
+            </div>
+            
+            <div class="filter-item">
+              <label class="filter-label">Status</label>
+              <div class="custom-select-wrapper">
+                <select v-model="selectedStatus" class="custom-select">
+                  <option value="">All Statuses</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                  <option value="Active">Active</option>
+                  <option value="Completed">Completed</option>
+                </select>
+                <v-icon class="select-icon">mdi-chevron-down</v-icon>
+              </div>
+            </div>
+            
+            <div class="filter-item">
+              <label class="filter-label">Department</label>
+              <div class="custom-select-wrapper">
+                <select v-model="selectedDepartment" class="custom-select">
+                  <option value="">All Departments</option>
+                  <option value="HR">HR</option>
+                  <option value="Finance">Finance</option>
+                  <option value="IT">IT</option>
+                  <option value="Operations">Operations</option>
+                  <option value="Sales">Sales</option>
+                </select>
+                <v-icon class="select-icon">mdi-chevron-down</v-icon>
+              </div>
+            </div>
+            
+            <div class="filter-item">
+              <label class="filter-label">Amount Range</label>
+              <div class="custom-select-wrapper">
+                <select v-model="loanAmountRange" class="custom-select">
+                  <option value="">All Amounts</option>
+                  <option value="0-5000">$0 - $5,000</option>
+                  <option value="5000-10000">$5,000 - $10,000</option>
+                  <option value="10000-25000">$10,000 - $25,000</option>
+                  <option value="25000+">$25,000+</option>
+                </select>
+                <v-icon class="select-icon">mdi-chevron-down</v-icon>
+              </div>
+            </div>
+            
+            <div class="filter-item">
+              <label class="filter-label">Actions</label>
+              <div class="filter-action-buttons">
+                <button class="custom-reset-btn" @click="resetFilters">
+                  <v-icon class="btn-icon">mdi-refresh</v-icon>
                   Reset
-                </v-btn>
-                <v-btn
-                  color="warning"
-                  @click="sendReminders"
-                  class="enhanced-btn"
-                >
-                  Send Reminders
-                </v-btn>
+                </button>
+                <button class="custom-new-btn" @click="openNewLoanDialog">
+                  <v-icon class="btn-icon">mdi-plus</v-icon>
+                  New Loan
+                </button>
               </div>
-            </v-col>
-          </v-row>
-        </v-card-text>
-      </v-card>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Loans Data Table -->
       <v-card class="enhanced-card" elevation="4">
@@ -289,7 +252,7 @@
                 icon="mdi-cash"
                 size="small"
                 variant="text"
-                color="success"
+                color="#8B1538"
                 @click="recordPayment(item)"
                 :disabled="item.status === 'Completed'"
               />
@@ -490,7 +453,7 @@
           <v-btn variant="outlined" @click="showNewLoanDialog = false">
             Cancel
           </v-btn>
-          <v-btn color="success" @click="submitLoanApplication">
+          <v-btn color="#8B1538" @click="submitLoanApplication">
             Submit Application
           </v-btn>
         </v-card-actions>
@@ -565,6 +528,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { Chart, registerables } from 'chart.js'
+import { useAccountsStore } from '@/stores/accounts'
+
+// Accounting store
+const accountsStore = useAccountsStore()
 
 Chart.register(...registerables)
 
@@ -841,7 +808,45 @@ const openNewLoanDialog = () => {
 }
 
 const submitLoanApplication = () => {
-  alert('Loan application submitted for approval!')
+  // Basic validation
+  if (!newLoan.value.employeeId || !newLoan.value.loanAmount || newLoan.value.loanAmount <= 0) {
+    alert('Please fill employee and positive loan amount.')
+    return
+  }
+  // Find employee name from list
+  const emp = availableEmployees.value.find(e => e.id === newLoan.value.employeeId)
+  const employeeName = emp ? emp.name : 'Employee'
+  // Register an advance payroll event (positive net = issuance)
+  accountsStore.registerPayrollEvent({
+    date: new Date().toISOString().slice(0,10),
+    employeeId: String(newLoan.value.employeeId),
+    employeeName,
+    type: 'advance',
+    gross: 0,
+    taxes: 0,
+    net: Number(newLoan.value.loanAmount)
+  })
+  // (Optional) add to local loans list so UI reflects new loan quickly
+  loans.value.unshift({
+    id: Date.now(),
+    employeeName,
+    employeeId: String(newLoan.value.employeeId),
+    department: 'Unknown',
+    loanAmount: Number(newLoan.value.loanAmount),
+    remainingBalance: Number(newLoan.value.loanAmount),
+    status: 'Active',
+    applicationDate: newLoan.value.applicationDate,
+    approvalDate: newLoan.value.applicationDate,
+    loanType: newLoan.value.loanType || 'Advance',
+    interestRate: newLoan.value.interestRate,
+    installments: newLoan.value.installments,
+    monthlyDeduction: 0,
+    nextPaymentDate: newLoan.value.applicationDate,
+    paymentsMade: 0,
+    expectedCompletion: '',
+    guarantor: newLoan.value.guarantor
+  })
+  alert('Loan application submitted and advance registered!')
   showNewLoanDialog.value = false
 }
 
@@ -852,7 +857,30 @@ const recordPayment = (loan: any) => {
 }
 
 const savePayment = () => {
-  alert('Payment recorded successfully!')
+  if (!selectedLoan.value) {
+    alert('No loan selected')
+    return
+  }
+  const amt = Number(paymentData.value.amount)
+  if (!amt || amt <= 0) {
+    alert('Amount must be positive')
+    return
+  }
+  // Register repayment as negative advance (so posting logic treats as repayment)
+  accountsStore.registerPayrollEvent({
+    date: paymentData.value.paymentDate || new Date().toISOString().slice(0,10),
+    employeeId: selectedLoan.value.employeeId,
+    employeeName: selectedLoan.value.employeeName || selectedLoan.value.employeeName || 'Employee',
+    type: 'advance',
+    gross: 0,
+    taxes: 0,
+    net: -amt
+  })
+  // Update local loan balance
+  selectedLoan.value.remainingBalance = Math.max(0, Number(selectedLoan.value.remainingBalance) - amt)
+  selectedLoan.value.paymentsMade = (selectedLoan.value.paymentsMade || 0) + 1
+  if (selectedLoan.value.remainingBalance <= 0) selectedLoan.value.status = 'Completed'
+  alert('Payment recorded and repayment registered!')
   showPaymentDialog.value = false
 }
 
@@ -874,10 +902,6 @@ const generateReport = (loan: any) => {
 
 const exportLoanData = () => {
   alert('Export functionality coming soon!')
-}
-
-const sendReminders = () => {
-  alert('Payment reminders sent!')
 }
 
 const openBulkActions = () => {
@@ -1025,5 +1049,233 @@ onMounted(() => {
   border-radius: var(--border-radius-md);
   text-transform: none;
   font-weight: 500;
+  min-height: 40px;
+  padding: 0 16px;
+}
+
+/* Maroon theme buttons */
+.v-btn[style*="#8B1538"] {
+  background-color: #8B1538 !important;
+  border-color: #8B1538 !important;
+}
+
+.v-btn[style*="#8B1538"]:hover {
+  background-color: #6B0F2A !important;
+  border-color: #6B0F2A !important;
+}
+
+/* Ensure proper button alignment and spacing */
+.enhanced-header .d-flex {
+  align-items: center;
+  gap: 12px;
+}
+
+.enhanced-header .d-flex .v-btn {
+  white-space: nowrap;
+}
+
+/* Filter section button alignment */
+.d-flex.gap-4 {
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 40px;
+  gap: 16px !important;
+}
+
+/* Custom Filter Section */
+.custom-filter-section {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+
+.filter-header {
+  background: linear-gradient(135deg, #8B1538 0%, #6B0F2A 100%);
+  padding: 16px 24px;
+}
+
+.filter-title {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-icon {
+  color: white;
+}
+
+.filter-content {
+  padding: 24px;
+  background: white;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: 24px;
+  align-items: end;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+/* Custom Input Styles */
+.custom-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.custom-input {
+  width: 100%;
+  padding: 12px 16px 12px 48px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: white;
+  color: #374151;
+}
+
+.custom-input:focus {
+  outline: none;
+  border-color: #8B1538;
+  box-shadow: 0 0 0 3px rgba(139, 21, 56, 0.1);
+}
+
+.custom-input::placeholder {
+  color: #9ca3af;
+}
+
+.input-icon {
+  position: absolute;
+  left: 16px;
+  color: #6b7280;
+  z-index: 1;
+}
+
+.clear-btn {
+  position: absolute !important;
+  right: 8px;
+  color: #6b7280 !important;
+}
+
+/* Custom Select Styles */
+.custom-select-wrapper {
+  position: relative;
+}
+
+.custom-select {
+  width: 100%;
+  padding: 12px 40px 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  appearance: none;
+}
+
+.custom-select:focus {
+  outline: none;
+  border-color: #8B1538;
+  box-shadow: 0 0 0 3px rgba(139, 21, 56, 0.1);
+}
+
+.select-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  pointer-events: none;
+}
+
+/* Custom Action Buttons */
+.filter-action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.custom-reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.custom-reset-btn:hover {
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+}
+
+.custom-new-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #8B1538 0%, #6B0F2A 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.custom-new-btn:hover {
+  background: linear-gradient(135deg, #6B0F2A 0%, #5A0C23 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 21, 56, 0.3);
+}
+
+.btn-icon {
+  color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .filter-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .filter-content {
+    padding: 16px;
+  }
+  
+  .filter-action-buttons {
+    flex-direction: column;
+  }
 }
 </style>

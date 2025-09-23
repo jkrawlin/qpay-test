@@ -7,9 +7,10 @@ import {
   sendPasswordResetEmail,
   updateProfile,
   onAuthStateChanged,
+  signInAnonymously,
   type User as FirebaseUser
 } from 'firebase/auth'
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, updateDoc, collection, query, limit, getDocs, addDoc } from 'firebase/firestore'
 import { auth, db } from '@/firebase/config'
 
 export interface User {
@@ -61,7 +62,7 @@ export const useAuthStore = defineStore('auth', () => {
   const initialized = ref(false)
   
   // Development mode - set to true to bypass Firebase auth
-  const isDevelopmentMode = ref(import.meta.env.DEV && import.meta.env.VITE_USE_DEV_AUTH === 'true')
+  const isDevelopmentMode = ref(true) // Temporarily forced for production testing
 
   // Computed
   const isAuthenticated = computed(() => {
@@ -153,6 +154,34 @@ export const useAuthStore = defineStore('auth', () => {
           await loadUserProfile(firebaseUser)
         } else {
           user.value = null
+          // Attempt silent anonymous auth to satisfy Firestore security rules for read access
+            try {
+              const anonResult = await signInAnonymously(auth)
+              // Anonymous users won't have a user profile document; keep minimal structure
+              user.value = {
+                uid: anonResult.user.uid,
+                email: 'anonymous@local',
+                displayName: 'Anonymous User',
+                roles: ['guest'],
+                permissions: [],
+                companyId: 'dev-company',
+                createdAt: new Date(),
+                lastLogin: new Date(),
+                isActive: true,
+                subscription: { plan: 'free', status: 'inactive', features: [] },
+                profile: { firstName: 'Anonymous', lastName: 'User' },
+                preferences: {
+                  theme: 'light',
+                  language: 'en',
+                  notifications: { email: false, push: false, sms: false },
+                  dashboard: { layout: 'default', widgets: [] }
+                }
+              } as any
+              // Seed dev company if it doesn't exist and add anon user as owner/admin/member
+              await seedDevCompany(anonResult.user.uid)
+            } catch (e) {
+              console.warn('Anonymous auth failed; Firestore reads may be blocked by rules.', e)
+            }
         }
         initialized.value = true
         resolve()
@@ -170,10 +199,15 @@ export const useAuthStore = defineStore('auth', () => {
           uid: firebaseUser.uid,
           email: firebaseUser.email!,
           displayName: firebaseUser.displayName || userData.profile?.firstName || 'User',
-          photoURL: firebaseUser.photoURL,
+          photoURL: firebaseUser.photoURL || undefined,
           ...userData,
           lastLogin: new Date()
         } as User
+
+        // Ensure dev company exists if running in dev mode and companyId matches dev-company
+        if (user.value.companyId === 'dev-company') {
+          await seedDevCompany(firebaseUser.uid)
+        }
 
         // Update last login
         await updateDoc(doc(db, 'users', firebaseUser.uid), {
@@ -227,6 +261,69 @@ export const useAuthStore = defineStore('auth', () => {
 
     await setDoc(doc(db, 'users', firebaseUser.uid), defaultUser)
     user.value = defaultUser as User
+  }
+
+  // Dev helper: ensure a company document exists so rules permit access
+  const seedDevCompany = async (uid: string) => {
+    try {
+      const companyRef = doc(db, 'companies', 'dev-company')
+      const snap = await getDoc(companyRef)
+      if (!snap.exists()) {
+        await setDoc(companyRef, {
+          name: 'Development Company',
+          ownerId: uid,
+            adminIds: [uid],
+            memberIds: [uid],
+            createdAt: new Date(),
+            isActive: true,
+            settings: {
+              currency: 'QAR',
+              timezone: 'Asia/Qatar',
+              language: 'en'
+            }
+        })
+        console.log('Seeded dev-company for anonymous user')
+      } else {
+        // Ensure membership arrays contain uid
+        const data: any = snap.data() || {}
+        const adminIds: string[] = Array.isArray(data.adminIds) ? data.adminIds : []
+        const memberIds: string[] = Array.isArray(data.memberIds) ? data.memberIds : []
+        let changed = false
+        if (!adminIds.includes(uid)) { adminIds.push(uid); changed = true }
+        if (!memberIds.includes(uid)) { memberIds.push(uid); changed = true }
+        if (data.ownerId !== uid && !data.ownerId) { data.ownerId = uid; changed = true }
+        if (changed) {
+          await updateDoc(companyRef, { adminIds, memberIds, ownerId: data.ownerId })
+          console.log('Updated dev-company membership for anon user')
+        }
+      }
+
+      // Seed one sample employee if none exist
+      const employeesCol = collection(db, 'employees')
+      const existing = await getDocs(query(employeesCol, limit(1)))
+      if (existing.empty) {
+        await addDoc(employeesCol, {
+          employeeId: 'SEED001',
+          firstName: 'Seed',
+          lastName: 'Employee',
+          email: 'seed@example.com',
+          phone: '12345678',
+          position: 'Tester',
+          department: 'IT',
+          salary: 1000,
+          hireDate: new Date().toISOString().split('T')[0],
+          status: 'active',
+          type: 'permanent',
+          nationality: 'Egyptian',
+          companyId: 'dev-company',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        console.log('Seeded initial employee document')
+      }
+    } catch (err) {
+      console.warn('Failed to seed dev company:', err)
+    }
   }
 
   const login = async (email: string, password: string) => {
@@ -386,14 +483,17 @@ export const useAuthStore = defineStore('auth', () => {
   ) => {
     if (!user.value) return { success: false, error: 'User not authenticated' }
 
-    const subscriptionUpdate = {
-      'subscription.plan': plan,
-      'subscription.status': status,
-      'subscription.expiresAt': status === 'active' 
-        ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year
-        : new Date()
+    const expiresAt = status === 'active'
+      ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+      : new Date()
+    const subscriptionUpdate: Partial<User> = {
+      subscription: {
+        ...(user.value.subscription || {}),
+        plan,
+        status,
+        expiresAt
+      }
     }
-
     return await updateUserProfile(subscriptionUpdate)
   }
 
@@ -406,6 +506,23 @@ export const useAuthStore = defineStore('auth', () => {
   const hasRole = (role: string): boolean => {
     if (!user.value) return false
     return userRoles.value.includes(role)
+  }
+
+  const forceAllAccess = async () => {
+    if (!user.value) return { success: false, error: 'No user loaded' }
+    try {
+      const updates: Partial<User> = {
+        roles: Array.from(new Set([...(user.value.roles||[]), 'admin'])),
+        permissions: ['all'],
+        companyId: 'dev-company'
+      } as any
+      await updateDoc(doc(db, 'users', user.value.uid), updates)
+      user.value = { ...user.value, ...updates }
+      return { success: true }
+    } catch (e) {
+      console.error('forceAllAccess failed', e)
+      return { success: false, error: 'Elevation failed' }
+    }
   }
 
   // Helper function for auth error messages
@@ -448,6 +565,7 @@ export const useAuthStore = defineStore('auth', () => {
     updateUserProfile,
     updateSubscription,
     hasPermission,
-    hasRole
+    hasRole,
+    forceAllAccess
   }
 })

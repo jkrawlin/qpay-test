@@ -32,76 +32,7 @@
         </v-col>
       </v-row>
 
-      <!-- Compliance Overview Cards -->
-      <v-row class="mb-6">
-        <v-col cols="12" sm="6" lg="3">
-          <v-card :color="complianceScore >= 90 ? 'success' : complianceScore >= 70 ? 'warning' : 'error'" dark>
-            <v-card-text>
-              <div class="d-flex align-center justify-space-between">
-                <div>
-                  <div class="text-h4 font-weight-bold">{{ complianceScore }}%</div>
-                  <div class="text-body-2">Compliance Score</div>
-                </div>
-                <v-icon size="40">mdi-shield-check</v-icon>
-              </div>
-              <v-progress-linear
-                :model-value="complianceScore"
-                color="white"
-                class="mt-3"
-                height="4"
-              />
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="12" sm="6" lg="3">
-          <v-card color="error" dark>
-            <v-card-text>
-              <div class="d-flex align-center justify-space-between">
-                <div>
-                  <div class="text-h4 font-weight-bold">{{ criticalAlerts }}</div>
-                  <div class="text-body-2">Critical Alerts</div>
-                </div>
-                <v-icon size="40">mdi-alert-circle</v-icon>
-              </div>
-              <div class="text-caption mt-3">
-                Requires immediate attention
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="12" sm="6" lg="3">
-          <v-card color="warning" dark>
-            <v-card-text>
-              <div class="d-flex align-center justify-space-between">
-                <div>
-                  <div class="text-h4 font-weight-bold">{{ expiringDocuments }}</div>
-                  <div class="text-body-2">Expiring Soon</div>
-                </div>
-                <v-icon size="40">mdi-calendar-alert</v-icon>
-              </div>
-              <div class="text-caption mt-3">
-                Next 60 days
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="12" sm="6" lg="3">
-          <v-card color="info" dark>
-            <v-card-text>
-              <div class="d-flex align-center justify-space-between">
-                <div>
-                  <div class="text-h4 font-weight-bold">{{ totalDocuments }}</div>
-                  <div class="text-body-2">Total Documents</div>
-                </div>
-                <v-icon size="40">mdi-file-document-multiple</v-icon>
-              </div>
-              <div class="text-caption mt-3">
-                {{ validDocuments }} valid
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
+      <!-- KPI cards removed (Critical Alerts, Expiring Soon, Total Documents) per request -->
 
       <!-- Main Content -->
       <v-row>
@@ -389,12 +320,7 @@ const showReminderDialog = ref(false)
 const showRenewalDialog = ref(false)
 const selectedDocument = ref<any>(null)
 
-// Mock data
-const complianceScore = ref(92)
-const criticalAlerts = ref(3)
-const expiringDocuments = ref(12)
-const totalDocuments = ref(245)
-const validDocuments = ref(220)
+// Mock data (top-level KPI metrics removed per request so underlying refs removed)
 
 const documentHeaders = [
   { title: 'Employee', key: 'employee', sortable: true },
@@ -633,20 +559,16 @@ NIPON PAYROLL PRO - COMPLIANCE REPORT
 Generated on: ${new Date().toLocaleDateString()}
 
 COMPLIANCE OVERVIEW:
-Total Score: ${complianceScore.value}%
-Critical Alerts: ${criticalAlerts.value}
-Expiring Documents: ${expiringDocuments.value}
-Total Documents: ${totalDocuments.value}
-Valid Documents: ${validDocuments.value}
+Top-level KPI metrics removed from dashboard (score, critical alerts, expiring counts).
 
 DOCUMENT STATUS:
 ${documents.value.map(doc => 
-  `- ${doc.title} (${doc.type}): ${doc.status} - Expires: ${doc.expiryDate.toLocaleDateString()}`
+  `- ${doc.employeeName} (${doc.documentType} ${doc.documentNumber}): ${doc.status} - Expires: ${doc.expiryDate.toLocaleDateString()}`
 ).join('\n')}
 
 URGENT ACTIONS REQUIRED:
 ${urgentActions.value.map(action => 
-  `- ${action.title}: ${action.description}`
+  `- ${action.title}`
 ).join('\n')}
     `
     
@@ -669,14 +591,11 @@ ${urgentActions.value.map(action =>
 const refreshData = () => {
   loading.value = true
   try {
-    // Simulate data refresh
+    // Simulate data refresh (KPI metrics removed)
     setTimeout(() => {
-      complianceScore.value = Math.floor(Math.random() * 10) + 90 // 90-99%
-      criticalAlerts.value = Math.floor(Math.random() * 5) + 1 // 1-5
-      expiringDocuments.value = Math.floor(Math.random() * 15) + 5 // 5-19
       loading.value = false
       alert('Data refreshed successfully!')
-    }, 1500)
+    }, 1000)
   } catch (error) {
     console.error('Data refresh failed:', error)
     alert('Failed to refresh data. Please try again.')
@@ -720,7 +639,7 @@ const handleUrgentAction = (action: any) => {
     const index = urgentActions.value.findIndex(a => a.id === action.id)
     if (index !== -1) {
       urgentActions.value.splice(index, 1)
-      criticalAlerts.value = Math.max(0, criticalAlerts.value - 1)
+  // criticalAlerts metric removed; no decrement necessary
     }
     alert(`${action.title} has been completed successfully!`)
   }
@@ -747,7 +666,7 @@ const generateComplianceCertificate = () => {
 COMPLIANCE CERTIFICATE
 
 This certifies that NIPON PAYROLL PRO
-has achieved a compliance score of ${complianceScore.value}%
+has removed dashboard compliance score metric
 as of ${new Date().toLocaleDateString()}
 
 All critical compliance requirements have been met.
@@ -777,10 +696,10 @@ const exportComplianceData = () => {
     const csvContent = [
       headers.join(','),
       ...documents.value.map(doc => [
-        `"${doc.title}"`,
-        doc.type,
+        `"${doc.employeeName}"`,
+        doc.documentType,
         doc.status,
-        doc.employee,
+        doc.employeeId,
         doc.expiryDate.toLocaleDateString(),
         getDaysUntilExpiry(doc.expiryDate)
       ].join(','))
