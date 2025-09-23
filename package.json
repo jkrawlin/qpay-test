@@ -30,10 +30,8 @@
     "apexcharts": "^5.3.5",
     "axios": "^1.6.0",
     "chart.js": "^4.5.0",
-    "crypto-js": "^4.2.0",
     "date-fns": "^2.30.0",
     "echarts": "^5.6.0",
-    "firebase": "^10.5.0",
     "floating-vue": "^5.2.2",
     "handsontable": "^13.1.0",
     "html2canvas": "^1.4.0",
@@ -46,7 +44,6 @@
     "phosphor-icons": "^1.4.2",
     "pinia": "^2.1.0",
     "qrcode": "^1.5.0",
-    "tesseract.js": "^6.0.1",
     "vue": "^3.4.0",
     "vue-chartjs": "^5.3.2",
     "vue-draggable-plus": "^0.6.0",
@@ -61,7 +58,6 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@types/crypto-js": "^4.2.0",
     "@types/lodash-es": "^4.17.0",
     "@types/node": "^20.8.0",
     "@typescript-eslint/eslint-plugin": "^6.7.0",
@@ -90,4 +86,7 @@
   ],
   "author": "Nipon Payroll Pro",
   "license": "Commercial"
+  ,"engines": {
+    "node": "^20.8.0"
+  }
 }
