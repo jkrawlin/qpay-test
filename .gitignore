@@ -124,7 +124,9 @@ cypress/screenshots/
 
 # Application-specific ignores
 uploads/
+# Ignore only top-level documents data folder, not source components
 documents/
+!src/components/documents/
 reports/
 exports/
 
