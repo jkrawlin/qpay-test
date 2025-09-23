@@ -231,8 +231,8 @@
         <!-- Visa Expiry -->
         <template v-slot:item.visaExpiry="{ item }">
           <div class="text-caption">
-            <div>{{ formatDate(item.visa?.expiryDate) }}</div>
-            <div v-if="isVisaExpiringSoon(item.visa?.expiryDate)" class="text-caption text-medium-emphasis">
+            <div>{{ item.visa?.expiryDate ? formatDate(item.visa.expiryDate) : '—' }}</div>
+            <div v-if="item.visa?.expiryDate && isVisaExpiringSoon(item.visa.expiryDate)" class="text-caption text-medium-emphasis">
               <v-icon color="warning" size="small" class="mr-1">mdi-alert</v-icon>
               Expiring Soon
             </div>
@@ -241,7 +241,7 @@
 
         <!-- Salary -->
         <template v-slot:item.salary="{ item }">
-          <span class="text-caption font-weight-medium">{{ formatCurrency(item.salary || item.basicSalary) }}</span>
+          <span class="text-caption font-weight-medium">{{ formatCurrency(item.salary) }}</span>
         </template>
 
         <!-- Status -->
@@ -339,250 +339,7 @@
       </div>
     </v-card>
 
-    <!-- Employee Detail Dialog (Redesigned Layout) -->
-    <v-dialog v-model="showDetailDialog" max-width="1100px" scrollable transition="dialog-bottom-transition">
-      <v-card
-        v-if="selectedEmployee"
-        class="employee-detail-dialog redesigned"
-        role="dialog"
-        :aria-label="`${selectedEmployee.firstName} ${selectedEmployee.lastName} details`"
-        aria-modal="true"
-        @keydown.esc.prevent="showDetailDialog = false"
-      >
-        <div class="employee-modal-layout">
-          <!-- Side Panel / Navigation -->
-            <aside class="employee-modal-nav" :class="{'elevated': true}">
-              <div class="profile-block">
-                <v-avatar :image="`https://i.pravatar.cc/96?u=${selectedEmployee.email}`" size="72" class="mb-3" />
-                <h2 class="emp-name">{{ selectedEmployee.firstName }} {{ selectedEmployee.lastName }}</h2>
-                <p class="emp-position">{{ selectedEmployee.position }}</p>
-                <div class="chips-row">
-                  <v-chip
-                    v-if="selectedEmployee.status === 'Active'"
-                    size="x-small"
-                    density="compact"
-                    class="mr-1 status-chip status-active"
-                  >
-                    {{ selectedEmployee.status }}
-                  </v-chip>
-                  <v-chip
-                    v-else
-                    :color="getStatusColor(selectedEmployee.status)"
-                    variant="tonal"
-                    size="x-small"
-                    density="compact"
-                    class="mr-1 status-chip"
-                  >
-                    {{ selectedEmployee.status }}
-                  </v-chip>
-                  <v-chip class="emp-id-chip" size="x-small" density="compact" variant="outlined">
-                    {{ selectedEmployee.employeeId }}
-                  </v-chip>
-                </div>
-              </div>
-
-              <div class="progress-block removed-progress" aria-hidden="true"></div>
-
-              <nav class="section-nav" aria-label="Employee sections">
-                <ul>
-                  <li v-for="s in sections" :key="s.key">
-                    <button
-                      :class="['nav-link', { active: activeSection === s.key }]"
-                      @click="setSection(s.key)"
-                      :aria-current="activeSection === s.key ? 'page' : false"
-                      class="text-left"
-                    >
-                      <v-icon size="18" class="mr-2">{{ s.icon }}</v-icon>
-                      <span>{{ s.label }}</span>
-                      <v-chip v-if="s.key === 'documents'" size="x-small" variant="outlined" color="primary" class="ml-auto" density="compact">
-                        {{ documentCount }}
-                      </v-chip>
-                    </button>
-                  </li>
-                </ul>
-              </nav>
-
-              <div class="side-actions">
-                <v-btn block color="primary" size="small" class="mb-2" @click="editEmployee(selectedEmployee)">
-                  <v-icon start size="16">mdi-pencil</v-icon> Edit
-                </v-btn>
-                <v-btn block variant="outlined" size="small" class="mb-2" @click="viewDocuments(selectedEmployee)">
-                  <v-icon start size="16">mdi-file-document</v-icon> Docs
-                </v-btn>
-                <v-btn block variant="text" size="small" class="text-danger" @click="showDetailDialog = false">
-                  <v-icon start size="16">mdi-close</v-icon> Close
-                </v-btn>
-              </div>
-            </aside>
-
-            <!-- Main Content Area -->
-            <main class="employee-modal-content" ref="contentArea" tabindex="0">
-              <div class="content-top-bar">
-                <div class="breadcrumbs text-caption">
-                  Employees / Nipon / <span class="current">{{ selectedEmployee.firstName }} {{ selectedEmployee.lastName }}</span>
-                </div>
-                <div class="top-actions">
-                  <v-btn variant="text" size="small" icon="mdi-arrow-left" @click="showDetailDialog = false" :title="'Close'" />
-                  <v-btn variant="text" size="small" icon="mdi-dots-vertical" :title="'More actions'" />
-                </div>
-              </div>
-
-              <!-- Overview Section -->
-              <section v-if="activeSection === 'overview'" key="overview" class="section-block" aria-labelledby="overview-heading">
-                <header class="section-header">
-                  <h3 id="overview-heading"><v-icon size="20" class="mr-1 white-icon">mdi-account-details</v-icon> Overview</h3>
-                  <p class="section-sub">Key personal & sponsorship attributes</p>
-                </header>
-                <div class="grid two">
-                  <div class="panel">
-                    <h4 class="panel-title"><v-icon size="16" class="mr-1 white-icon">mdi-account</v-icon> Personal Information</h4>
-                    <ul class="data-list">
-                      <li><span>Full Name</span><strong>{{ selectedEmployee.firstName }} {{ selectedEmployee.lastName }}</strong></li>
-                      <li><span>Email</span><strong>{{ selectedEmployee.email }}</strong></li>
-                      <li><span>Phone</span><strong>{{ selectedEmployee.phoneNumber || 'Not provided' }}</strong></li>
-                      <li><span>Date of Birth</span><strong>{{ formatDate(selectedEmployee.dateOfBirth) || 'Not provided' }}</strong></li>
-                      <li><span>Nationality</span><strong>{{ selectedEmployee.nationality || 'Not provided' }}</strong></li>
-                      <li><span>Qatar ID</span><strong>{{ selectedEmployee.qatarId || 'Not provided' }}</strong></li>
-                      <li><span>Passport #</span><strong>{{ selectedEmployee.passportNumber || 'Not provided' }}</strong></li>
-                    </ul>
-                  </div>
-                  <div class="panel">
-                    <h4 class="panel-title"><v-icon size="16" class="mr-1 white-icon">mdi-briefcase</v-icon> Employment</h4>
-                    <ul class="data-list">
-                      <li><span>Employee ID</span><strong>{{ selectedEmployee.employeeId }}</strong></li>
-                      <li><span>Department</span><strong>{{ selectedEmployee.department }}</strong></li>
-                      <li><span>Position</span><strong>{{ selectedEmployee.position }}</strong></li>
-                      <li><span>Join Date</span><strong>{{ formatDate(selectedEmployee.joinDate) }}</strong></li>
-                      <li><span>Status</span><strong><v-chip :color="getStatusColor(selectedEmployee.status)" size="x-small" variant="tonal">{{ selectedEmployee.status }}</v-chip></strong></li>
-                      <li><span>Salary</span><strong class="text-green">{{ formatCurrency(selectedEmployee.salary) }}</strong></li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="kpi-row">
-                  <div class="kpi">
-                    <div class="kpi-label">Visa Status</div>
-                    <div class="kpi-value"><v-chip :color="getVisaStatusColor(selectedEmployee.visaStatus)" size="x-small" variant="tonal">{{ selectedEmployee.visaStatus }}</v-chip></div>
-                  </div>
-                  <div class="kpi">
-                    <div class="kpi-label">Visa Expiry</div>
-                    <div class="kpi-value">{{ formatDate(selectedEmployee.visaExpiry) }}</div>
-                  </div>
-                  <div class="kpi">
-                    <div class="kpi-label">Profile Docs</div>
-                    <div class="kpi-value">{{ documentCount }} / 2</div>
-                  </div>
-                </div>
-              </section>
-
-              <!-- Employment Section (extended) -->
-              <section v-if="activeSection === 'employment'" key="employment" class="section-block" aria-labelledby="employment-heading">
-                <header class="section-header">
-                  <h3 id="employment-heading"><v-icon size="20" class="mr-1 white-icon">mdi-briefcase</v-icon> Employment & Compensation</h3>
-                  <p class="section-sub">Core employment & salary information</p>
-                </header>
-                <div class="grid two">
-                  <div class="panel">
-                    <h4 class="panel-title"><v-icon size="16" class="mr-1 white-icon">mdi-briefcase-account</v-icon> Employment Details</h4>
-                    <ul class="data-list">
-                      <li><span>Department</span><strong>{{ selectedEmployee.department }}</strong></li>
-                      <li><span>Join Date</span><strong>{{ formatDate(selectedEmployee.joinDate) }}</strong></li>
-                      <li><span>Status</span><strong>{{ selectedEmployee.status }}</strong></li>
-                      <li><span>Bank</span><strong>{{ selectedEmployee.bankName || 'Not provided' }}</strong></li>
-                      <li><span>Account #</span><strong>{{ selectedEmployee.accountNumber || 'Not provided' }}</strong></li>
-                      <li><span>IBAN</span><strong>{{ selectedEmployee.iban || 'Not provided' }}</strong></li>
-                    </ul>
-                  </div>
-                  <div class="panel">
-                    <h4 class="panel-title"><v-icon size="16" class="mr-1 white-icon">mdi-cash</v-icon> Compensation</h4>
-                    <ul class="data-list">
-                      <li><span>Monthly Salary</span><strong class="text-green">{{ formatCurrency(selectedEmployee.salary) }}</strong></li>
-                      <li><span>Annual Est.</span><strong>{{ formatCurrency(selectedEmployee.salary * 12) }}</strong></li>
-                    </ul>
-                  </div>
-                </div>
-              </section>
-
-              <!-- Documents Section -->
-              <section v-if="activeSection === 'documents'" key="documents" class="section-block" aria-labelledby="documents-heading">
-                <header class="section-header">
-                  <h3 id="documents-heading"><v-icon size="20" class="mr-1 white-icon">mdi-file-document-multiple</v-icon> Documents</h3>
-                  <p class="section-sub">Identity & employment documents</p>
-                </header>
-                <div class="documents-list">
-                  <div class="doc-item" v-for="doc in documentItems" :key="doc.key">
-                    <div class="doc-icon">
-                      <v-icon :color="doc.color" size="22">{{ doc.icon }}</v-icon>
-                    </div>
-                    <div class="doc-meta">
-                      <div class="doc-title">{{ doc.label }}</div>
-                      <div class="doc-status" :class="{'missing': !doc.present}">
-                        <v-chip v-if="doc.present" size="x-small" color="success" variant="tonal">Available</v-chip>
-                        <v-chip v-else size="x-small" color="grey" variant="outlined">Missing</v-chip>
-                      </div>
-                    </div>
-                    <div class="doc-actions">
-                      <v-btn
-                        v-if="doc.present"
-                        size="x-small"
-                        variant="text"
-                        color="primary"
-                        @click="viewDocument(doc.value as string)"
-                      >
-                        View
-                      </v-btn>
-                      <v-btn
-                        v-else
-                        size="x-small"
-                        variant="text"
-                        color="primary"
-                        @click="uploadDocument(doc.key)"
-                      >
-                        Upload
-                      </v-btn>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <!-- Visa Section -->
-              <section v-if="activeSection === 'visa'" key="visa" class="section-block" aria-labelledby="visa-heading">
-                <header class="section-header">
-                  <h3 id="visa-heading"><v-icon size="20" class="mr-1 white-icon">mdi-passport</v-icon> Visa Information</h3>
-                  <p class="section-sub">Status & expiry timeline</p>
-                </header>
-                <div class="grid one">
-                  <div class="panel">
-                    <h4 class="panel-title"><v-icon size="16" class="mr-1 white-icon">mdi-passport</v-icon> Visa Details</h4>
-                    <ul class="data-list">
-                      <li><span>Visa Status</span><strong><v-chip :color="getVisaStatusColor(selectedEmployee.visaStatus)" size="x-small" variant="tonal">{{ selectedEmployee.visaStatus }}</v-chip></strong></li>
-                      <li><span>Visa Expiry</span><strong>{{ formatDate(selectedEmployee.visaExpiry) }}</strong></li>
-                      <li><span>Expiring Soon</span><strong>{{ isVisaExpiringSoon(selectedEmployee.visaExpiry) ? 'Yes' : 'No' }}</strong></li>
-                    </ul>
-                  </div>
-                </div>
-              </section>
-
-              <!-- Activity -->
-              <section v-if="activeSection === 'activity'" key="activity" class="section-block" aria-labelledby="activity-heading">
-                <header class="section-header">
-                  <h3 id="activity-heading"><v-icon size="20" class="mr-1 white-icon">mdi-history</v-icon> Activity (Placeholder)</h3>
-                  <p class="section-sub">Recent changes & audit log (future)</p>
-                </header>
-                <div class="placeholder muted">No activity data implemented yet.</div>
-              </section>
-
-              <!-- Notes -->
-              <section v-if="activeSection === 'notes'" key="notes" class="section-block" aria-labelledby="notes-heading">
-                <header class="section-header">
-                  <h3 id="notes-heading"><v-icon size="20" class="mr-1 white-icon">mdi-note-text</v-icon> Notes (Placeholder)</h3>
-                  <p class="section-sub">Internal remarks & annotations (future)</p>
-                </header>
-                <div class="placeholder muted">Notes feature not yet implemented.</div>
-              </section>
-            </main>
-        </div>
-      </v-card>
-    </v-dialog>
+    <!-- Legacy Employee Detail Dialog removed: replaced by EmployeeViewModal -->
 
     <!-- Edit Employee Dialog -->
     <v-dialog v-model="showEditDialog" max-width="800px" scrollable>
@@ -886,12 +643,21 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Employee View Modal (New Component) -->
+    <EmployeeViewModal
+      v-model="viewEmployeeDialog"
+      :employee="selectedEmployee"
+      @edit="editEmployee(selectedEmployee)"
+      @documents="() => {/* future documents action */}"
+    />
   </v-container>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import EmployeeViewModal from '@/components/employees/EmployeeViewModal.vue'
 
 // Router
 const router = useRouter()
@@ -911,24 +677,17 @@ const qfIncomplete = ref(false)
 const qfActive = ref(false)
 const itemsPerPage = ref(10)
 const currentPage = ref(1)
-const showDetailDialog = ref(false)
+// Removed legacy showDetailDialog (replaced by EmployeeViewModal)
 const showEditDialog = ref(false)
 const showDocumentsDialog = ref(false)
+const viewEmployeeDialog = ref(false)
 const selectedEmployee = ref<any>(null)
 // Old tab system replaced by section-based layout (activeTab removed)
 const activeSection = ref('overview')
 const contentArea = ref<HTMLElement | null>(null)
-const opening = ref(false)
+// removed legacy 'opening' state
 
-// Sidebar navigation sections
-const sections = [
-  { key: 'overview', label: 'Overview', icon: 'mdi-account-details' },
-  { key: 'employment', label: 'Employment', icon: 'mdi-briefcase' },
-  { key: 'documents', label: 'Documents', icon: 'mdi-file-document-multiple' },
-  { key: 'visa', label: 'Visa', icon: 'mdi-passport' },
-  { key: 'activity', label: 'Activity', icon: 'mdi-history' },
-  { key: 'notes', label: 'Notes', icon: 'mdi-note-text' }
-]
+// Legacy sections array removed (navigation handled inside EmployeeViewModal)
 
 // Filter options
 const visaStatuses = ['Valid', 'Expiring Soon', 'Renewal Required', 'Processing']
@@ -988,8 +747,8 @@ const filteredEmployees = computed(() => {
   }
 
   // Quick filters
-  if (qfActive.value) filtered = filtered.filter(emp => emp.status === 'Active')
-  if (qfExpiringSoon.value) filtered = filtered.filter(emp => isVisaExpiringSoon(emp.visa?.expiryDate))
+  if (qfActive.value) filtered = filtered.filter(emp => emp.status?.toLowerCase() === 'active')
+  if (qfExpiringSoon.value) filtered = filtered.filter(emp => isVisaExpiringSoon(emp.visa?.expiryDate || ''))
   if (qfIncomplete.value) filtered = filtered.filter(emp => !emp.qatarId || !emp.passportNumber)
 
   // Text search
@@ -1008,7 +767,7 @@ watch([itemsPerPage, filteredEmployees], () => { if (pageStart.value >= filtered
 
 const totalEmployees = computed(() => niponEmployees.value.length)
 const activeVisas = computed(() => niponEmployees.value.filter(emp => emp.visa?.status?.toLowerCase() === 'valid').length)
-const expiringVisas = computed(() => niponEmployees.value.filter(emp => isVisaExpiringSoon(emp.visa?.expiryDate)).length)
+const expiringVisas = computed(() => niponEmployees.value.filter(emp => isVisaExpiringSoon(emp.visa?.expiryDate || '')).length)
 const incompleteProfiles = computed(() => niponEmployees.value.filter(emp => !emp.qatarId || !emp.passportNumber).length)
 const profileCompletionPct = computed(() => {
   if (!niponEmployees.value.length) return 0
@@ -1022,7 +781,7 @@ const profileCompletionPct = computed(() => {
 const quickFilters = computed(() => [
   { key: 'expiring', label: 'Expiring <90d', icon: 'mdi-timer-sand', isActive: qfExpiringSoon.value, badge: expiringVisas.value || 0, severity: expiringVisas.value ? 'warn' : undefined },
   { key: 'incomplete', label: 'Incomplete Docs', icon: 'mdi-file-alert', isActive: qfIncomplete.value, badge: incompleteProfiles.value || 0, severity: incompleteProfiles.value ? 'warn' : undefined },
-  { key: 'active', label: 'Active Status', icon: 'mdi-badge-account', isActive: qfActive.value, badge: niponEmployees.value.filter(e => e.status === 'Active').length || 0 }
+  { key: 'active', label: 'Active Status', icon: 'mdi-badge-account', isActive: qfActive.value, badge: niponEmployees.value.filter(e => e.status?.toLowerCase() === 'active').length || 0 }
 ])
 
 const toggleQuickFilter = (key: string) => {
@@ -1076,12 +835,8 @@ const addEmployee = () => {
 const viewEmployee = (employee: any) => {
   selectedEmployee.value = employee
   activeSection.value = 'overview'
-  showDetailDialog.value = true
-  opening.value = true
-  setTimeout(() => { opening.value = false }, 350)
-  nextTick(() => {
-    requestAnimationFrame(() => contentArea.value?.focus())
-  })
+  viewEmployeeDialog.value = true // use enhanced modal component
+  nextTick(() => requestAnimationFrame(() => contentArea.value?.focus()))
 }
 
 const editEmployee = (employee: any) => {
@@ -1115,10 +870,10 @@ const exportEmployees = () => {
         `"${emp.firstName} ${emp.lastName}"`,
         emp.position,
         emp.department,
-        emp.joinDate,
+        emp.hireDate,
         emp.salary,
         emp.status,
-        emp.visaStatus,
+        emp.visa?.status || '',
         emp.qatarId,
         emp.passportNumber
       ].join(','))
@@ -1157,10 +912,10 @@ ${niponEmployees.value.map(emp =>
 ).join('\n')}
 
 VISA STATUS OVERVIEW:
-Valid: ${niponEmployees.value.filter(emp => emp.visaStatus === 'Valid').length}
-Expiring Soon: ${niponEmployees.value.filter(emp => emp.visaStatus === 'Expiring Soon').length}
-Renewal Required: ${niponEmployees.value.filter(emp => emp.visaStatus === 'Renewal Required').length}
-Processing: ${niponEmployees.value.filter(emp => emp.visaStatus === 'Processing').length}
+Valid: ${niponEmployees.value.filter(emp => emp.visa?.status === 'Valid').length}
+Expiring Soon: ${niponEmployees.value.filter(emp => emp.visa?.status === 'Expiring Soon').length}
+Renewal Required: ${niponEmployees.value.filter(emp => emp.visa?.status === 'Renewal Required').length}
+Processing: ${niponEmployees.value.filter(emp => emp.visa?.status === 'Processing').length}
 
 DEPARTMENT BREAKDOWN:
 ${[...new Set(niponEmployees.value.map(emp => emp.department))].map(dept => 
@@ -1180,21 +935,10 @@ ${[...new Set(niponEmployees.value.map(emp => emp.department))].map(dept =>
   toast.push({ message: 'Report generation failed', type: 'error' })
   }
 }
-// Document computed structures for redesigned modal
-const documentItems = computed(() => {
-  if (!selectedEmployee.value) return []
-  return [
-    { key: 'qatarIdDocument', label: 'Qatar ID Document', value: selectedEmployee.value.qatarIdDocument, present: !!selectedEmployee.value.qatarIdDocument, icon: 'mdi-card-account-details', color: 'primary' },
-    { key: 'passportDocument', label: 'Passport Document', value: selectedEmployee.value.passportDocument, present: !!selectedEmployee.value.passportDocument, icon: 'mdi-passport', color: 'green' }
-  ]
-})
-const documentCount = computed(() => documentItems.value.filter(d => d.present).length)
-
-// Section helper
-const setSection = (key: string) => {
-  activeSection.value = key
-  nextTick(() => contentArea.value?.scrollTo({ top: 0, behavior: 'smooth' }))
-}
+// Document items for legacy inline dialog (now unused) - kept minimal or could be removed
+// Replaced by internal computation inside EmployeeViewModal. Leaving a lightweight version
+// in case other parts still reference it during transitional cleanup.
+// Removed legacy documentItems (handled inside EmployeeViewModal)
 // Row class highlight
 const rowClass = (item: any) => {
   if (!item) return ''
