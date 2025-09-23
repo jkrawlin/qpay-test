@@ -18,8 +18,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { auth } from '@/firebase/config'
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+// Firebase removed: local dev super login just ensures auth store initialized
 
 const email = ref('admin@example.com')
 const password = ref('Admin123!')
@@ -30,7 +29,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 // Helper to ensure the user has full system permissions
-async function elevateUser(uid: string) {
+async function elevateUser(_uid?: string) {
   // We store roles/permissions in the user document; if it does not exist we create it via updateUserProfile path
   try {
     await authStore.updateUserProfile({
@@ -47,26 +46,12 @@ async function handleLogin() {
   loading.value = true
   error.value = ''
   try {
-    // Try sign in first
-    let userCredential
-    try {
-      userCredential = await signInWithEmailAndPassword(auth, email.value, password.value)
-    } catch (signInErr: any) {
-      if (signInErr.code === 'auth/user-not-found') {
-        // Auto-register minimal user then continue
-        userCredential = await createUserWithEmailAndPassword(auth, email.value, password.value)
-        await updateProfile(userCredential.user, { displayName: 'Super Admin' })
-      } else {
-        throw signInErr
-      }
-    }
-
-    await authStore.initializeAuth() // load or create profile
-    await elevateUser(userCredential.user.uid)
-
+    // Local mode: simply initialize and elevate
+    await authStore.initializeAuth()
+    await elevateUser('dev-user-001')
     router.push({ name: 'Dashboard' })
   } catch (e: any) {
-    console.error('Super login failed', e)
+    console.error('Super login failed (local mode)', e)
     error.value = e?.message || 'Login failed'
   } finally {
     loading.value = false
