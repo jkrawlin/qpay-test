@@ -1,17 +1,4 @@
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy,
-  Timestamp
-} from 'firebase/firestore'
-import { db } from '@/firebase/config'
+// Firestore removed: in-memory / mock fallback implementation
 import { differenceInDays, addMonths } from 'date-fns'
 
 export interface Customer {
@@ -94,182 +81,65 @@ export interface LicenseAlert {
 }
 
 export class CustomerService {
-  private customersCollection = collection(db, 'customers')
-  private contractsCollection = collection(db, 'contracts')
+  // In-memory arrays to simulate persistence
+  private customersCollection: Customer[] = []
+  private contractsCollection: Contract[] = []
 
   // Customer CRUD Operations
   async getAllCustomers(): Promise<Customer[]> {
-    try {
-      const q = query(this.customersCollection, orderBy('companyName', 'asc'))
-      const snapshot = await getDocs(q)
-      
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        tradeLicenseExpiry: doc.data().tradeLicenseExpiry?.toDate(),
-        contractStartDate: doc.data().contractStartDate?.toDate(),
-        contractEndDate: doc.data().contractEndDate?.toDate(),
-        lastPaymentDate: doc.data().lastPaymentDate?.toDate(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate()
-      })) as Customer[]
-    } catch (error) {
-      console.error('Error fetching customers:', error)
-      return this.getMockCustomers()
-    }
+    return this.customersCollection.length ? this.customersCollection : this.getMockCustomers()
   }
 
   async getCustomerById(id: string): Promise<Customer | null> {
-    try {
-      const docRef = doc(this.customersCollection, id)
-      const docSnap = await getDoc(docRef)
-      
-      if (docSnap.exists()) {
-        const data = docSnap.data()
-        return {
-          id: docSnap.id,
-          ...data,
-          tradeLicenseExpiry: data.tradeLicenseExpiry?.toDate(),
-          contractStartDate: data.contractStartDate?.toDate(),
-          contractEndDate: data.contractEndDate?.toDate(),
-          lastPaymentDate: data.lastPaymentDate?.toDate(),
-          createdAt: data.createdAt?.toDate(),
-          updatedAt: data.updatedAt?.toDate()
-        } as Customer
-      }
-      return null
-    } catch (error) {
-      console.error('Error fetching customer:', error)
-      return null
-    }
+    return this.customersCollection.find(c => c.id === id) || null
   }
 
   async createCustomer(customerData: Omit<Customer, 'id'>): Promise<string | null> {
-    try {
-      // Validate required fields
-      this.validateCustomerData(customerData)
-      
-      // Check for duplicate trade license
-      const isDuplicate = await this.checkDuplicateTradeLicense(customerData.tradeLicenseNumber)
-      if (isDuplicate) {
-        throw new Error('Trade license number already exists')
-      }
-
-      // Prepare data for Firestore
-      const firestoreData = {
-        ...customerData,
-        tradeLicenseExpiry: Timestamp.fromDate(customerData.tradeLicenseExpiry),
-        contractStartDate: customerData.contractStartDate ? 
-          Timestamp.fromDate(customerData.contractStartDate) : null,
-        contractEndDate: customerData.contractEndDate ? 
-          Timestamp.fromDate(customerData.contractEndDate) : null,
-        lastPaymentDate: customerData.lastPaymentDate ? 
-          Timestamp.fromDate(customerData.lastPaymentDate) : null,
-        createdAt: Timestamp.fromDate(new Date()),
-        updatedAt: Timestamp.fromDate(new Date()),
-        totalRevenue: 0,
-        outstandingBalance: 0,
-        priority: 'medium',
-        tags: []
-      }
-
-      const docRef = await addDoc(this.customersCollection, firestoreData)
-      return docRef.id
-    } catch (error) {
-      console.error('Error creating customer:', error)
-      throw error
+    this.validateCustomerData(customerData)
+    if (await this.checkDuplicateTradeLicense(customerData.tradeLicenseNumber)) {
+      throw new Error('Trade license number already exists')
     }
+    const id = Math.random().toString(36).slice(2)
+    const record: Customer = {
+      ...customerData,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      totalRevenue: 0,
+      outstandingBalance: 0,
+      priority: 'medium'
+    }
+    this.customersCollection.push(record)
+    return id
   }
 
   async updateCustomer(id: string, customerData: Partial<Customer>): Promise<void> {
-    try {
-      // Prepare data for Firestore
-      const firestoreData: any = {
-        ...customerData,
-        updatedAt: Timestamp.fromDate(new Date())
-      }
-
-      // Convert dates to Timestamps
-      if (customerData.tradeLicenseExpiry) {
-        firestoreData.tradeLicenseExpiry = Timestamp.fromDate(customerData.tradeLicenseExpiry)
-      }
-      if (customerData.contractStartDate) {
-        firestoreData.contractStartDate = Timestamp.fromDate(customerData.contractStartDate)
-      }
-      if (customerData.contractEndDate) {
-        firestoreData.contractEndDate = Timestamp.fromDate(customerData.contractEndDate)
-      }
-      if (customerData.lastPaymentDate) {
-        firestoreData.lastPaymentDate = Timestamp.fromDate(customerData.lastPaymentDate)
-      }
-
-      const docRef = doc(this.customersCollection, id)
-      await updateDoc(docRef, firestoreData)
-    } catch (error) {
-      console.error('Error updating customer:', error)
-      throw error
+    const idx = this.customersCollection.findIndex(c => c.id === id)
+    if (idx === -1) throw new Error('Customer not found')
+    this.customersCollection[idx] = {
+      ...this.customersCollection[idx],
+      ...customerData,
+      updatedAt: new Date()
     }
   }
 
   async deleteCustomer(id: string): Promise<void> {
-    try {
-      // Check if customer has active contracts
-      const activeContracts = await this.getCustomerContracts(id, 'active')
-      if (activeContracts.length > 0) {
-        throw new Error('Cannot delete customer with active contracts')
-      }
-
-      const docRef = doc(this.customersCollection, id)
-      await deleteDoc(docRef)
-    } catch (error) {
-      console.error('Error deleting customer:', error)
-      throw error
-    }
+    const activeContracts = await this.getCustomerContracts(id, 'active')
+    if (activeContracts.length > 0) throw new Error('Cannot delete customer with active contracts')
+    this.customersCollection = this.customersCollection.filter(c => c.id !== id)
   }
 
   // Contract Management
   async getCustomerContracts(customerId: string, status?: string): Promise<Contract[]> {
-    try {
-      let q = query(this.contractsCollection, where('customerId', '==', customerId))
-      
-      if (status) {
-        q = query(q, where('status', '==', status))
-      }
-
-      const snapshot = await getDocs(q)
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        startDate: doc.data().startDate?.toDate(),
-        endDate: doc.data().endDate?.toDate(),
-        signedDate: doc.data().signedDate?.toDate(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate()
-      })) as Contract[]
-    } catch (error) {
-      console.error('Error fetching contracts:', error)
-      return []
-    }
+    const contracts = this.contractsCollection.filter(c => c.customerId === customerId)
+    return status ? contracts.filter(c => c.status === status) : contracts
   }
 
   async createContract(contractData: Omit<Contract, 'id'>): Promise<string | null> {
-    try {
-      const firestoreData = {
-        ...contractData,
-        startDate: Timestamp.fromDate(contractData.startDate),
-        endDate: Timestamp.fromDate(contractData.endDate),
-        signedDate: contractData.signedDate ? 
-          Timestamp.fromDate(contractData.signedDate) : null,
-        createdAt: Timestamp.fromDate(new Date()),
-        updatedAt: Timestamp.fromDate(new Date())
-      }
-
-      const docRef = await addDoc(this.contractsCollection, firestoreData)
-      return docRef.id
-    } catch (error) {
-      console.error('Error creating contract:', error)
-      throw error
-    }
+    const id = Math.random().toString(36).slice(2)
+    const record: Contract = { ...contractData, id, createdAt: new Date(), updatedAt: new Date() }
+    this.contractsCollection.push(record)
+    return id
   }
 
   // License Management
@@ -446,24 +316,7 @@ export class CustomerService {
   }
 
   async getCustomersByStatus(status: string): Promise<Customer[]> {
-    try {
-      const q = query(this.customersCollection, where('status', '==', status))
-      const snapshot = await getDocs(q)
-      
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        tradeLicenseExpiry: doc.data().tradeLicenseExpiry?.toDate(),
-        contractStartDate: doc.data().contractStartDate?.toDate(),
-        contractEndDate: doc.data().contractEndDate?.toDate(),
-        lastPaymentDate: doc.data().lastPaymentDate?.toDate(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate()
-      })) as Customer[]
-    } catch (error) {
-      console.error('Error fetching customers by status:', error)
-      return []
-    }
+    return this.customersCollection.filter(c => c.status === status)
   }
 
   // Helper Methods
@@ -497,19 +350,7 @@ export class CustomerService {
   }
 
   private async checkDuplicateTradeLicense(licenseNumber: string, excludeId?: string): Promise<boolean> {
-    try {
-      const q = query(this.customersCollection, where('tradeLicenseNumber', '==', licenseNumber))
-      const snapshot = await getDocs(q)
-      
-      if (excludeId) {
-        return snapshot.docs.some(doc => doc.id !== excludeId)
-      }
-      
-      return !snapshot.empty
-    } catch (error) {
-      console.error('Error checking duplicate trade license:', error)
-      return false
-    }
+    return this.customersCollection.some(c => c.tradeLicenseNumber === licenseNumber && c.id !== excludeId)
   }
 
   private getUrgencyLevel(daysUntilExpiry: number): 'critical' | 'high' | 'medium' | 'low' {

@@ -1,5 +1,4 @@
-import { storage } from '@/firebase/config'
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
+// Local stub storage service (Firebase removed)
 
 /**
  * Upload an employee document to Firebase Storage.
@@ -13,10 +12,8 @@ export const uploadEmployeeDocument = async (params: {
 }): Promise<string> => {
   const { companyId, employeeId, file, docType } = params
   const ext = file.name.split('.').pop() || 'bin'
-  const path = `employees/${companyId}/${employeeId}/${docType}.${ext}`
-  const fileRef = storageRef(storage, path)
-  await uploadBytes(fileRef, file, { contentType: file.type })
-  return await getDownloadURL(fileRef)
+  // Simulated URL (would be storage path in real implementation)
+  return `https://local.storage/employees/${companyId}/${employeeId}/${docType}-${Date.now()}.${ext}`
 }
 
 /** Convenience bulk uploader */
